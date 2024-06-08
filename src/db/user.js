@@ -4,7 +4,6 @@ import mongoose from "mongoose";
 const UserSchema = new mongoose.Schema({
   displayName: {
     type: String,
-    required: true,
   },
   username: {
     type: String,
@@ -29,7 +28,6 @@ const UserSchema = new mongoose.Schema({
   profile: {
     dob: {
       type: Date,
-      required: true,
     },
     location: {
       type: String,
@@ -79,7 +77,6 @@ export const getUserBySessionToken = async (sessionToken) => {
 };
 
 // Create
-
 export const createUser = async (data) => {
   return new UserModel(data).save().then((user) => user.toObject());
 };
