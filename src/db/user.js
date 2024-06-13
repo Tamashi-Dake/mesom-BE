@@ -58,35 +58,35 @@ export const UserModel = mongoose.model("User", UserSchema);
 // Action
 // Get
 
-export const getUsers = async () => {
-  return await UserModel.find();
+export const getUsers = () => {
+  return UserModel.find();
 };
 
-export const getUserById = async (id) => {
-  return await UserModel.findById(id);
+export const getUserById = (id) => {
+  return UserModel.findById(id);
 };
 
-export const getUserByUsername = async (username) => {
-  return await UserModel.findOne({ username });
+export const getUserByUsername = (username) => {
+  return UserModel.findOne({ username });
 };
 
-export const getUserBySessionToken = async (sessionToken) => {
-  return await UserModel.findOne({
+export const getUserBySessionToken = (sessionToken) => {
+  return UserModel.findOne({
     "authentication.sessionToken": sessionToken,
   });
 };
 
 // Create
-export const createUser = async (data) => {
+export const createUser = (data) => {
   return new UserModel(data).save().then((user) => user.toObject());
 };
 
 // Delete
-export const deleteUser = async (id) => {
-  return await UserModel.findByIdAndDelete({ _id: id });
+export const deleteUser = (id) => {
+  return UserModel.findByIdAndDelete({ _id: id });
 };
 
 // Update
-export const updateUser = async (id, data) => {
-  return await UserModel.findByIdAndUpdate(id, data);
+export const updateUser = (id, data) => {
+  return UserModel.findByIdAndUpdate(id, data);
 };

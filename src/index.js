@@ -41,7 +41,7 @@ mongoose.connect(process.env.MONGO_URI);
 
 mongoose.connection.on("error", (err) => {
   console.error(err);
-  process.exit(); // Sử dụng mã thoát 1 để chỉ ra lỗi
+  process.exit(1); // Sử dụng mã thoát 1 để chỉ ra lỗi
 });
 
 app.use("/", router());
