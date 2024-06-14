@@ -82,7 +82,7 @@ export const createUser = (data) => {
 };
 
 // Delete
-export const deleteUser = (id) => {
+export const deleteUserById = (id) => {
   return UserModel.findByIdAndDelete({ _id: id });
 };
 

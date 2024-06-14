@@ -93,7 +93,7 @@ export const login = async (request, response) => {
       // httpOnly: true, // Kích hoạt nếu dùng HTTPS
       // secure: true, // Kích hoạt nếu dùng HTTPS
       // sameSite: "none", // Điều chỉnh nếu cần thiết
-      domain: "localhost",
+      domain: process.env.COOKIE_DOMAIN || "localhost",
       path: "/",
       maxAge: 1000 * 60 * 60 * 24, // 1 day
     });
