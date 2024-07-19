@@ -1,4 +1,8 @@
-import { createUser, getUserByUsername } from "../db/user.js";
+import {
+  createUser,
+  getUserByUsername,
+  getUserBySessionToken,
+} from "../db/user.js";
 import { authentication, random } from "../helper/index.js";
 
 export const register = async (request, response) => {
@@ -90,9 +94,9 @@ export const login = async (request, response) => {
 
     // set cookie
     response.cookie("mesom-auth", user.authentication.sessionToken, {
-      // httpOnly: true, // Kích hoạt nếu dùng HTTPS
+      httpOnly: true, // Kích hoạt nếu dùng HTTPS
       // secure: true, // Kích hoạt nếu dùng HTTPS
-      // sameSite: "none", // Điều chỉnh nếu cần thiết
+      sameSite: "strict", // Điều chỉnh nếu cần thiết
       domain: process.env.COOKIE_DOMAIN || "localhost",
       path: "/",
       maxAge: 1000 * 60 * 60 * 24, // 1 day
@@ -103,5 +107,48 @@ export const login = async (request, response) => {
   } catch (error) {
     console.log(error);
     return response.status(400).json({ error: true, message: "Error" });
+  }
+};
+
+export const logout = async (request, response) => {
+  try {
+    const sessionToken = request.cookies["mesom-auth"];
+
+    // Kiểm tra xem sessionToken có tồn tại hay không
+    if (!sessionToken) {
+      return response
+        .status(400)
+        .json({ error: true, message: "No session token found" });
+    }
+
+    // Tìm người dùng theo session token
+    const user = await getUserBySessionToken(sessionToken);
+
+    if (!user) {
+      return response
+        .status(400)
+        .json({ error: true, message: "User not found" });
+    }
+
+    // Xóa session token
+    user.authentication.sessionToken = null;
+
+    // Lưu thay đổi
+    await user.save();
+
+    // Xóa cookie
+    response.cookie("mesom-auth", "", {
+      domain: process.env.COOKIE_DOMAIN || "localhost",
+      path: "/",
+      maxAge: 0, // Cookie sẽ hết hạn ngay lập tức
+    });
+
+    // Trả về phản hồi thành công
+    return response.status(200).json({ message: "Logged out successfully" });
+  } catch (error) {
+    console.log(error);
+    return response
+      .status(400)
+      .json({ error: true, message: "Error logging out" });
   }
 };

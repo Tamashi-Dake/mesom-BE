@@ -32,17 +32,29 @@ export const deleteUser = async (request, response) => {
 export const updateUser = async (request, response) => {
   try {
     const { id } = request.params;
+    const user = await getUserById(id);
 
-    // TODO: change to orther fields of user to update
-    // get username from request body
-    const { username } = request.body;
-    if (!username) {
+    // get update info from request body
+    const { username, displayName, profile } = request.body;
+    if (!username || !displayName) {
       return response
         .status(400)
-        .json({ error: true, message: "Username is required" });
+        .json({
+          error: true,
+          message: "Username and Display name is required",
+        });
     }
-    const user = await getUserById(id);
+
     user.username = username;
+    user.displayName = displayName;
+    if (profile) {
+      if (profile.dob) user.profile.dob = profile.dob;
+      if (profile.location) user.profile.location = profile.location;
+      if (profile.avatar) user.profile.avatar = profile.avatar;
+      if (profile.banner) user.profile.banner = profile.banner;
+      if (profile.bio) user.profile.bio = profile.bio;
+    }
+
     await user.save();
     return response.status(200).json(user);
   } catch (error) {
