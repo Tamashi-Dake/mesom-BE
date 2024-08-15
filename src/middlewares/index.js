@@ -1,6 +1,6 @@
 import get from "lodash/get.js";
 import merge from "lodash/merge.js";
-import { getUserBySessionToken } from "../db/user.js";
+import { getUserBySessionToken } from "../db/user.model.js";
 
 export const isAuthenticated = async (request, response, next) => {
   try {

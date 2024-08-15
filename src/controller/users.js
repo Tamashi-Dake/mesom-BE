@@ -1,11 +1,25 @@
-import { getUsers, deleteUserById, getUserById } from "../db/user.js";
+import { request } from "express";
+import { deleteUserById, getUserById } from "../db/user.model.js";
 
-export const getAllUsers = async (request, response) => {
+// export const getAllUsers = async (request, response) => {
+//   try {
+//     const users = await getUsers();
+//     return response.status(200).json({
+//       users,
+//     });
+//   } catch (error) {
+//     console.log(error);
+//     return response
+//       .status(400)
+//       .json({ error: true, message: `Error: ${error}` });
+//   }
+// };
+
+export const getUser = async (request, response) => {
   try {
-    const users = await getUsers();
-    return response.status(200).json({
-      users,
-    });
+    const { id } = request.params;
+    const user = await getUserById(id);
+    return response.status(200).json(user);
   } catch (error) {
     console.log(error);
     return response
@@ -36,13 +50,11 @@ export const updateUser = async (request, response) => {
 
     // get update info from request body
     const { username, displayName, profile } = request.body;
-    if (!username || !displayName) {
-      return response
-        .status(400)
-        .json({
-          error: true,
-          message: "Username and Display name is required",
-        });
+    if (!username) {
+      return response.status(400).json({
+        error: true,
+        message: "Username is required",
+      });
     }
 
     user.username = username;

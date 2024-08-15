@@ -3,9 +3,9 @@ import http from "http";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import compression from "compression";
-import mongoose from "mongoose";
 import dotenv from "dotenv";
 import router from "./router/index.js";
+import connectMongoDB from "./db/connectMongoDB.js";
 
 // Khởi tạo ứng dụng Express
 const app = express();
@@ -23,10 +23,8 @@ app.use(
   })
 );
 
-// Middleware body-parser (dùng tích hợp sẵn của Express)
-app.use(express.json()); // Sử dụng express.json() thay cho bodyParser.json()
-
 // Middleware khác
+app.use(express.json());
 app.use(cookieParser());
 app.use(compression());
 
@@ -35,14 +33,7 @@ const server = http.createServer(app);
 
 server.listen(8080, () => {
   console.log("Server is running on port 8080");
-});
-
-// Kết nối MongoDB
-mongoose.connect(process.env.MONGO_URI);
-
-mongoose.connection.on("error", (err) => {
-  console.error(err);
-  process.exit(1); // Sử dụng mã thoát 1 để chỉ ra lỗi
+  connectMongoDB();
 });
 
 app.use("/", router());
