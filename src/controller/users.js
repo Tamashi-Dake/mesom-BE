@@ -21,7 +21,7 @@ export const getUser = async (request, response) => {
     const user = await getUserById(id);
     return response.status(200).json(user);
   } catch (error) {
-    console.log(error);
+    console.log("error in getUser", error);
     return response
       .status(400)
       .json({ error: true, message: `Error: ${error}` });
@@ -72,5 +72,48 @@ export const updateUser = async (request, response) => {
   } catch (error) {
     console.log(error);
     return response.sendStatus(400);
+  }
+};
+
+export const toggleFollowUser = async (request, response) => {
+  try {
+    const { id } = request.params;
+    const user = await getUserById(id);
+    const currentUser = await getUserById(request.identify._id);
+
+    // Check if user / currentUser is missing
+    if (!user || !currentUser) {
+      return response.status(400).json({ error: "User does not exist" });
+    }
+
+    // Check if user is trying to follow themselves
+    if (currentUser._id.toString() === user._id.toString()) {
+      return response.status(400).json({ error: "You cannot follow yourself" });
+    }
+
+    // Check if user is already following
+    const isFollowing = currentUser.following.includes(user._id);
+    if (!isFollowing) {
+      // Add user to following list
+      currentUser.following.push(user._id);
+      user.followers.push(currentUser._id);
+      await currentUser.save();
+      await user.save();
+      return response.status(200).json({
+        message: `${user.username.toString()} followed successfully`,
+      });
+    } else {
+      // Remove user from following list
+      currentUser.following.pull(user._id);
+      user.followers.pull(currentUser._id);
+      await currentUser.save();
+      await user.save();
+      return response.status(200).json({
+        message: `${user.username.toString()} unfollowed successfully`,
+      });
+    }
+  } catch (error) {
+    console.log("Error in toggleFollowUser", error);
+    return response.status(400).json({ error: `Error: ${error}` });
   }
 };
