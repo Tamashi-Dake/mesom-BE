@@ -1,5 +1,6 @@
 import { request } from "express";
-import { deleteUserById, getUserById } from "../db/user.model.js";
+import { deleteUserById, getUserById, UserModel } from "../db/user.model.js";
+import Notification from "../db/notification.model.js";
 
 // export const getAllUsers = async (request, response) => {
 //   try {
@@ -93,12 +94,37 @@ export const toggleFollowUser = async (request, response) => {
 
     // Check if user is already following
     const isFollowing = currentUser.following.includes(user._id);
+
+    // TODO: Add following limit (e.g. 100 for free users, 500 for verified users)
+    // followers limit (e.g. 1000 for free users, 5000 for verified users)
+
     if (!isFollowing) {
       // Add user to following list
       currentUser.following.push(user._id);
       user.followers.push(currentUser._id);
       await currentUser.save();
       await user.save();
+
+      // check if notification already exists
+      const notification = await Notification.findOne({
+        type: "follow",
+        from: currentUser._id,
+        to: user._id,
+      });
+
+      // check if user don't want to receive this type of notification
+      // TODO: add notification settings (for type of notifications)
+
+      if (!notification) {
+        // send notification to user
+        const newNotification = new Notification({
+          type: "follow",
+          from: currentUser._id,
+          to: user._id,
+        });
+        await newNotification.save();
+      }
+
       return response.status(200).json({
         message: `${user.username.toString()} followed successfully`,
       });
@@ -108,6 +134,7 @@ export const toggleFollowUser = async (request, response) => {
       user.followers.pull(currentUser._id);
       await currentUser.save();
       await user.save();
+
       return response.status(200).json({
         message: `${user.username.toString()} unfollowed successfully`,
       });
@@ -115,5 +142,31 @@ export const toggleFollowUser = async (request, response) => {
   } catch (error) {
     console.log("Error in toggleFollowUser", error);
     return response.status(400).json({ error: `Error: ${error}` });
+  }
+};
+
+export const getSuggestedUsers = async (request, response) => {
+  try {
+    const userId = request.identify._id;
+
+    // Lấy danh sách người dùng mà người dùng hiện tại đang theo dõi
+    const userFollowedByCurrentUser = await getUserById(userId).select(
+      "following"
+    );
+    const following = userFollowedByCurrentUser.following;
+
+    // Lấy danh sách user mà bạn của currentUser đang theo dõi nhưng currentUser không theo dõi
+    // TODO: What is this?
+    const friendOfFriends = await UserModel.find({
+      _id: { $nin: following.concat(userId) },
+      following: { $in: following },
+    })
+      .select("-authentication")
+      .limit(5);
+
+    res.status(200).json(friendOfFriends);
+  } catch (error) {
+    console.log("Error in getSuggestedUsers", error);
+    return response.status(500).json({ error: `Error: ${error}` });
   }
 };
