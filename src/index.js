@@ -1,9 +1,13 @@
 import express from "express";
 import http from "http";
+
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import compression from "compression";
+
 import dotenv from "dotenv";
+import { v2 as cloudinary } from "cloudinary";
+
 import router from "./router/index.js";
 import connectMongoDB from "./db/connectMongoDB.js";
 
@@ -13,6 +17,13 @@ const app = express();
 // Cấu hình dotenv
 dotenv.config({
   path: [".env.local", ".env"],
+});
+
+// Cấu hình Cloudinary
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
 // Middleware CORS

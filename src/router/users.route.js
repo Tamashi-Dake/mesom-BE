@@ -3,7 +3,9 @@ import {
   deleteUser,
   updateUser,
   toggleFollowUser,
-} from "../controller/users.js";
+  getSuggestedUsers,
+  updatePassword,
+} from "../controller/users.controller.js";
 import { isAuthenticated, isOwner } from "../middlewares/index.js";
 
 export default (router) => {
@@ -12,6 +14,12 @@ export default (router) => {
   router.delete("/users/:id", isAuthenticated, isOwner, deleteUser);
   router.patch("/users/:id", isAuthenticated, isOwner, updateUser);
 
+  // update password
+  router.patch("/password/:id", isAuthenticated, isOwner, updatePassword);
+
   // follow routes
   router.post("/follow/:id", isAuthenticated, toggleFollowUser);
+
+  // get Suggested Users
+  router.get("/users", isAuthenticated, getSuggestedUsers);
 };

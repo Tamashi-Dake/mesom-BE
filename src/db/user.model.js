@@ -5,6 +5,7 @@ const UserSchema = new mongoose.Schema(
   {
     displayName: {
       type: String,
+      default: "",
     },
     username: {
       type: String,
@@ -70,7 +71,7 @@ const UserSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-export const UserModel = mongoose.model("User", UserSchema);
+export const User = mongoose.model("User", UserSchema);
 
 // Action
 
@@ -79,15 +80,15 @@ export const UserModel = mongoose.model("User", UserSchema);
 // };
 
 export const getUserById = (id) => {
-  return UserModel.findById(id);
+  return User.findById(id);
 };
 
 export const getUserByUsername = (username) => {
-  return UserModel.findOne({ username });
+  return User.findOne({ username });
 };
 
 export const getUserBySessionToken = (sessionToken) => {
-  return UserModel.findOne({
+  return User.findOne({
     "authentication.sessionToken": sessionToken,
   });
 };
@@ -99,10 +100,10 @@ export const createUser = (data) => {
 
 // Delete
 export const deleteUserById = (id) => {
-  return UserModel.findByIdAndDelete({ _id: id });
+  return User.findByIdAndDelete({ _id: id });
 };
 
 // Update
-export const updateUser = (id, data) => {
-  return UserModel.findByIdAndUpdate(id, data);
-};
+// export const updateUser = (id, data) => {
+//   return User.findByIdAndUpdate(id, data);
+// };

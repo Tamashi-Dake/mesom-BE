@@ -70,7 +70,7 @@ export const login = async (request, response) => {
 
     if (!user) {
       return response
-        .status(400)
+        .status(404)
         .json({ error: true, message: "User does not exist" });
     }
 

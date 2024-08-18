@@ -1,4 +1,8 @@
-import { login, register, logout } from "../controller/authentication.js";
+import {
+  login,
+  register,
+  logout,
+} from "../controller/authentication.controller.js";
 
 export default (router) => {
   router.post("/auth/register", register);
