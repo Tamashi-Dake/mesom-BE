@@ -8,7 +8,7 @@ import {
 } from "../db/user.model.js";
 import Notification from "../db/notification.model.js";
 
-import { authentication, random } from "../helper/index.js";
+import { authentication, random } from "../util/authenticationCrypto.js";
 
 // export const getAllUsers = async (request, response) => {
 //   try {
@@ -79,11 +79,21 @@ export const updateUser = async (request, response) => {
       if (profile.dob) user.profile.dob = profile.dob;
       if (profile.location) user.profile.location = profile.location;
       if (profile.avatar) {
-        const uploadResponse = await cloudinary.uploader.upload(profile.avatar);
+        const uploadResponse = await cloudinary.uploader.upload(
+          profile.avatar,
+          {
+            folder: "AvatarImage",
+          }
+        );
         user.profile.avatar = uploadResponse.secure_url;
       }
       if (profile.banner) {
-        const uploadResponse = await cloudinary.uploader.upload(profile.banner);
+        const uploadResponse = await cloudinary.uploader.upload(
+          profile.banner,
+          {
+            folder: "CoverImage",
+          }
+        );
         user.profile.banner = uploadResponse.secure_url;
       }
       if (profile.bio) user.profile.bio = profile.bio;

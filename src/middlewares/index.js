@@ -36,6 +36,7 @@ export const isAuthenticated = async (request, response, next) => {
   }
 };
 
+// only work with User documents
 export const isOwner = async (request, response, next) => {
   try {
     // get user id from request params
@@ -53,7 +54,9 @@ export const isOwner = async (request, response, next) => {
 
     // check if current user is not the owner of the resource
     if (currentUserID.toString() !== id) {
-      return response.status(403).json({ error: true, message: "Forbidden" });
+      return response
+        .status(403)
+        .json({ error: true, message: "You are not the owner!" });
     }
 
     // continue to next middleware

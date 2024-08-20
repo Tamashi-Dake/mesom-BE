@@ -3,7 +3,7 @@ import {
   getUserByUsername,
   getUserBySessionToken,
 } from "../db/user.model.js";
-import { authentication, random } from "../helper/index.js";
+import { authentication, random } from "../util/authenticationCrypto.js";
 
 export const register = async (request, response) => {
   try {

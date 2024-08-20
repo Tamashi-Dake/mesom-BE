@@ -5,7 +5,7 @@ import {
   toggleFollowUser,
   getSuggestedUsers,
   updatePassword,
-} from "../controller/users.controller.js";
+} from "../controller/user.controller.js";
 import { isAuthenticated, isOwner } from "../middlewares/index.js";
 
 export default (router) => {
