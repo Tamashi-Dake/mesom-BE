@@ -237,12 +237,11 @@ export const toggleFollowUser = async (request, response) => {
 
       if (!notification) {
         // send notification to user
-        const newNotification = new Notification({
+        await Notification({
           type: "follow",
           from: currentUser._id,
           to: user._id,
         });
-        await newNotification.save();
       }
 
       return response.status(200).json({

@@ -1,6 +1,7 @@
 import get from "lodash/get.js";
 import merge from "lodash/merge.js";
 import { getUserBySessionToken } from "../db/user.model.js";
+import Post from "../db/post.model.js";
 
 export const isAuthenticated = async (request, response, next) => {
   try {
@@ -25,6 +26,37 @@ export const isAuthenticated = async (request, response, next) => {
     // merge user to request
     merge(request, { identify: user });
     // console.log(request.identify);
+
+    // continue to next middleware
+    return next();
+  } catch (error) {
+    console.log(error);
+    return response
+      .status(400)
+      .json({ error: true, message: `Error: ${error}` });
+  }
+};
+
+// check if post is exist
+export const checkPostStatus = async (request, response, next) => {
+  try {
+    // get post id from request params
+    const { id } = request.params;
+
+    // check if post id is missing
+    if (!id) {
+      return response
+        .status(400)
+        .json({ error: true, message: "Post ID is missing" });
+    }
+
+    // get post by id
+    const post = await Post.findById(id);
+    if (!post) {
+      return response
+        .status(400)
+        .json({ error: true, message: "Post does not exist" });
+    }
 
     // continue to next middleware
     return next();
