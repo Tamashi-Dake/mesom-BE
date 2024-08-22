@@ -4,6 +4,7 @@ import {
   deletePost,
   getAllPosts,
   getPost,
+  increasePostView,
   toggleLikePost,
   toggleSharePost,
 } from "../controller/post.controller.js";
@@ -37,5 +38,11 @@ export default (router) => {
     isAuthenticated,
     checkPostStatus,
     toggleSharePost
+  );
+  router.post(
+    "/posts/incresase-view/:id",
+    isAuthenticated,
+    checkPostStatus,
+    increasePostView
   );
 };

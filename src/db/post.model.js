@@ -22,6 +22,10 @@ const postSchema = new mongoose.Schema(
         ref: "Tag",
       },
     ],
+    views: {
+      type: Number,
+      default: 0,
+    },
   },
   { timestamps: true }
 );

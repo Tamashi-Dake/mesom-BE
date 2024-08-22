@@ -2,6 +2,7 @@ import { v2 as cloudinary } from "cloudinary";
 import { User } from "../db/user.model.js";
 import Post from "../db/post.model.js";
 import Notification from "../db/notification.model.js";
+import View from "../db/view.model.js";
 
 export const createPost = async (request, response) => {
   const { text } = request.body;
@@ -269,6 +270,28 @@ export const toggleSharePost = async (request, response) => {
       response.status(200).json({ message: `Post unshared` });
     }
     await post.save();
+  } catch (error) {
+    console.log(error);
+    return response.status(400).json({ error: `Error: ${error}` });
+  }
+};
+
+export const increasePostView = async (request, response) => {
+  const { id: postID } = request.params;
+  const userID = request.identify._id.toString();
+  try {
+    // Check if View exists (find by postID and userID)
+    const view = await View.findOne({ postID, userID });
+    if (!view) {
+      // Create a view
+      await View.create({ postID, userID });
+      // Increase the post view
+      await Post.updateOne({ _id: postID }, { $inc: { views: 1 } });
+
+      return response.status(200).json({ message: `Post view increased` });
+    } else {
+      return response.status(400).json({ error: `You just viewed this post` });
+    }
   } catch (error) {
     console.log(error);
     return response.status(400).json({ error: `Error: ${error}` });
