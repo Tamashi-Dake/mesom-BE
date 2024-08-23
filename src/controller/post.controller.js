@@ -100,10 +100,9 @@ export const createReplyPost = async (request, response) => {
 };
 
 export const getAllPosts = async (request, response) => {
+  // set the limit of posts per request
+  const { limit = 30, skip = 0 } = request.query;
   try {
-    // set the limit of posts per request
-    const { limit = 30, skip = 0 } = request.query;
-
     // get all posts
     const posts = await Post.find({ parentPostID: { $exists: false } })
       .sort({ createdAt: -1 })
@@ -135,15 +134,90 @@ export const getAllPosts = async (request, response) => {
   }
 };
 
+export const getLikedPosts = async (request, response) => {
+  const { userId } = request.params;
+  const { limit = 30, skip = 0 } = request.query;
+  try {
+    // check if the user exists
+    const user = await User.findById(userId);
+    if (!user) return response.status(404).json({ error: "User not found" });
+
+    // count all liked posts
+    const totalLikedPosts = await Post.countDocuments({ userLikes: userId });
+
+    // get all liked posts contains the userID
+    const posts = await Post.find({ userLikes: userId })
+      .sort({ createdAt: -1 })
+      .skip(parseInt(skip))
+      .limit(parseInt(limit))
+      .populate({
+        path: "author",
+        select: " displayName username profile.avatar",
+      });
+    if (!posts) {
+      return response
+        .status(404)
+        .json({ message: "You haven't liked any post" });
+    }
+
+    return response.status(200).json({
+      posts,
+      totalLikedPosts,
+      limit: parseInt(limit),
+      skip: parseInt(skip),
+      numberOfPostsFetched:
+        totalLikedPosts > limit + parseInt(skip)
+          ? parseInt(skip) + limit
+          : totalLikedPosts,
+    });
+  } catch (error) {
+    console.log(error);
+    return response.status(400).json({ error: `Error: ${error}` });
+  }
+};
+
 export const getPost = async (request, response) => {
   const { id } = request.params;
 
   try {
     const post = await Post.findById(id);
-    if (!post) {
-      return response.status(404).json({ error: "Post not found" });
-    }
     return response.status(200).json(post);
+  } catch (error) {
+    console.log(error);
+    return response.status(400).json({ error: `Error: ${error}` });
+  }
+};
+
+export const getRepliesForPost = async (request, response) => {
+  const { id: parentPostID } = request.params;
+  const { limit = 30, skip = 0 } = request.query;
+  try {
+    // count all replies for the post
+    const totalReplies = await Post.countDocuments({ parentPostID });
+
+    // get all replies for the post
+    const replies = await Post.find({ parentPostID })
+      .sort({ createdAt: -1 })
+      .skip(parseInt(skip))
+      .limit(parseInt(limit))
+      .populate({
+        path: "author",
+        select: "displayName username profile.avatar",
+      });
+    if (!replies) {
+      response.status(404).json({ message: "No replies found" });
+    }
+
+    return response.status(200).json({
+      replies,
+      totalReplies,
+      limit: parseInt(limit),
+      skip: parseInt(skip),
+      numberOfRepliesFetched:
+        totalReplies > limit + parseInt(skip)
+          ? parseInt(skip) + limit
+          : totalReplies,
+    });
   } catch (error) {
     console.log(error);
     return response.status(400).json({ error: `Error: ${error}` });

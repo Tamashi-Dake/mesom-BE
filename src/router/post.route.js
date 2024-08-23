@@ -3,7 +3,9 @@ import {
   createReplyPost,
   deletePost,
   getAllPosts,
+  getLikedPosts,
   getPost,
+  getRepliesForPost,
   increasePostView,
   toggleLikePost,
   toggleSharePost,
@@ -22,7 +24,14 @@ export default (router) => {
   );
   router.post("/posts/:id", isAuthenticated, createReplyPost);
   router.get("/posts", isAuthenticated, getAllPosts);
-  router.get("/posts/:id", getPost);
+  router.get("/posts/like/:userId", isAuthenticated, getLikedPosts);
+  router.get("/posts/:id", isAuthenticated, checkPostStatus, getPost);
+  router.get(
+    "/posts/replies/:id",
+    isAuthenticated,
+    checkPostStatus,
+    getRepliesForPost
+  );
   // router.patch("/posts/:id", isAuthenticated,  updatePost);
   router.delete("/posts/:id", isAuthenticated, checkPostStatus, deletePost);
 

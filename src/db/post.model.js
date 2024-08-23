@@ -8,7 +8,8 @@ const postSchema = new mongoose.Schema(
       required: true,
     },
     text: { type: String },
-    images: { type: String },
+    // images can be an array of strings
+    images: [{ type: String }],
     parentPostID: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Post",

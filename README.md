@@ -11,19 +11,22 @@
   - [x] Create post
   - [x] Read post
   - [x] Read all posts (pagination)
+  - [ ] Read replies of post
   - [ ] Update post
   - [x] Delete post
   - [x] Like post
   - [x] Share post
-  - [ ] View post
+  - [x] View post
   - [ ] Tags
 
 - [ ] User settings ( theme, email notifications, etc )
 
 <!-- models -->
 
+- [x] Users
 - [x] Notifications
-- [ ] Posts/ Replies
+- [x] Posts / Replies
+- [x] Views
 - [ ] Conversations
 - [ ] Messages
 
