@@ -24,13 +24,12 @@ import { authentication, random } from "../util/authenticationCrypto.js";
 //   }
 // };
 
-export const getUser = async (request, response) => {
+export const getUserFromUsername = async (request, response) => {
   try {
-    const { id } = request.params;
-    const user = await getUserById(id);
+    const user = await getUserByUsername(request.params.username);
     return response.status(200).json(user);
   } catch (error) {
-    console.log("error in getUser", error);
+    console.log("error in getUserFromUsername", error);
     return response
       .status(400)
       .json({ error: true, message: `Error: ${error}` });

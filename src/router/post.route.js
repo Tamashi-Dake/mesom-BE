@@ -3,18 +3,28 @@ import {
   createReplyPost,
   deletePost,
   getAllPosts,
-  getLikedPosts,
+  getLikedPostsByUser,
   getPost,
+  getPostsByFollowing,
+  getPostsByUser,
   getRepliesForPost,
   increasePostView,
   toggleLikePost,
   toggleSharePost,
 } from "../controller/post.controller.js";
-import { checkPostStatus, isAuthenticated } from "../middlewares/index.js";
+import {
+  checkPostStatus,
+  checkUserStatus,
+  isAuthenticated,
+} from "../middlewares/index.js";
 
 // import upload from "../config/uploadConfig.js";
 
 export default (router) => {
+  // Have to define the fixed routes first, because mongoose will mistake the fixed routes as dynamic routes
+  // Post for pages route
+  router.get("/posts", isAuthenticated, getAllPosts);
+  router.get("/posts/following", isAuthenticated, getPostsByFollowing);
   // post routes
   router.post(
     "/posts",
@@ -22,18 +32,32 @@ export default (router) => {
     // upload.array("images", 4),
     createPost
   );
-  router.post("/posts/:id", isAuthenticated, createReplyPost);
-  router.get("/posts", isAuthenticated, getAllPosts);
-  router.get("/posts/like/:userId", isAuthenticated, getLikedPosts);
   router.get("/posts/:id", isAuthenticated, checkPostStatus, getPost);
+  // router.patch("/posts/:id", isAuthenticated,  updatePost);
+  router.delete("/posts/:id", isAuthenticated, checkPostStatus, deletePost);
+
+  // reply routes
+  router.post("/posts/:id", isAuthenticated, createReplyPost);
   router.get(
     "/posts/replies/:id",
     isAuthenticated,
     checkPostStatus,
     getRepliesForPost
   );
-  // router.patch("/posts/:id", isAuthenticated,  updatePost);
-  router.delete("/posts/:id", isAuthenticated, checkPostStatus, deletePost);
+
+  // Post by user routes
+  router.get(
+    "/posts/user/:id",
+    isAuthenticated,
+    checkUserStatus,
+    getPostsByUser
+  );
+  router.get(
+    "/posts/like/:id",
+    isAuthenticated,
+    checkUserStatus,
+    getLikedPostsByUser
+  );
 
   // interaction routes
   router.post(

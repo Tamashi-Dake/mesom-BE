@@ -1,5 +1,5 @@
 import {
-  getUser,
+  getUserFromUsername,
   deleteUser,
   updateUser,
   toggleFollowUser,
@@ -10,9 +10,9 @@ import { isAuthenticated, isOwner } from "../middlewares/index.js";
 
 export default (router) => {
   // users routes
-  router.get("/users/:id", isAuthenticated, getUser);
-  router.delete("/users/:id", isAuthenticated, isOwner, deleteUser);
+  router.get("/users/:username", isAuthenticated, getUserFromUsername);
   router.patch("/users/:id", isAuthenticated, isOwner, updateUser);
+  router.delete("/users/:id", isAuthenticated, isOwner, deleteUser);
 
   // update password
   router.patch("/password/:id", isAuthenticated, isOwner, updatePassword);

@@ -134,7 +134,100 @@ export const getAllPosts = async (request, response) => {
   }
 };
 
-export const getLikedPosts = async (request, response) => {
+// get posts by author that user are following
+export const getPostsByFollowing = async (request, response) => {
+  const userId = request.identify._id.toString();
+  const { limit = 30, skip = 0 } = request.body;
+  try {
+    // get user
+    const user = await User.findById(userId);
+    // get following of user
+    const following = user.following;
+
+    // get posts from user in following
+    const feedPosts = await Post.find({
+      author: { $in: following },
+      parentPostID: { $exists: false },
+    })
+      .sort({ createdAt: -1 })
+      .limit(limit)
+      .skip(skip)
+      .populate({
+        path: "author",
+        select: " displayName username profile.avatar",
+      });
+    if (!feedPosts) {
+      return response
+        .status(404)
+        .json({ message: "You aren't following anyone" });
+    }
+
+    // get total number of posts
+    const totalPosts = await Post.countDocuments({
+      author: { $in: following },
+      parentPostID: { $exists: false },
+    });
+
+    return response.status(200).json({
+      feedPosts,
+      totalPosts,
+      limit: parseInt(limit),
+      skip: parseInt(skip),
+      numberOfPostsFetched:
+        totalPosts > limit + parseInt(skip)
+          ? parseInt(skip) + limit
+          : totalPosts,
+    });
+  } catch (error) {
+    console.log(error);
+    return response.status(400).json({ error: `Error at ${error}` });
+  }
+};
+export const getPostsByUser = async (request, response) => {
+  const userId = request.params.id;
+  const { limit = 30, skip = 0 } = request.query;
+  try {
+    // count all posts by the user
+    const totalPosts = await Post.countDocuments({
+      parentPostID: { $exists: false },
+      author: userId,
+    });
+
+    // get all posts by the user and posts with userShared contains the userID
+    const posts = await Post.find({
+      $or: [
+        { parentPostID: { $exists: false }, author: userId },
+        { parentPostID: { $exists: false }, userShared: userId },
+      ],
+    })
+      .sort({ createdAt: -1 })
+      .skip(parseInt(skip))
+      .limit(parseInt(limit))
+      .populate({
+        path: "author",
+        select: "displayName username profile.avatar",
+      });
+    if (!posts) {
+      return response.status(404).json({ message: "No posts found" });
+    }
+
+    return response.status(200).json({
+      posts,
+      totalPosts,
+      limit: parseInt(limit),
+      skip: parseInt(skip),
+      numberOfPostsFetched:
+        totalPosts > limit + parseInt(skip)
+          ? parseInt(skip) + limit
+          : totalPosts,
+    });
+  } catch (error) {
+    console.log(error);
+    return response.status(400).json({ error: `Error: ${error}` });
+  }
+};
+
+export const getLikedPostsByUser = async (request, response) => {
   const { userId } = request.params;
   const { limit = 30, skip = 0 } = request.query;
   try {
