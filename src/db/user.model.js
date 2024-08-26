@@ -70,14 +70,6 @@ const UserSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "Tweet",
     },
-    theme: {
-      type: String,
-      default: "light",
-    },
-    accentColor: {
-      type: String,
-      default: "blue",
-    },
     status: {
       type: String,
       enum: ["active", "inactive"],
