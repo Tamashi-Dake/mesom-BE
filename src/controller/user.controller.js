@@ -9,6 +9,7 @@ import {
 import Notification from "../db/notification.model.js";
 
 import { authentication, random } from "../util/authenticationCrypto.js";
+import Setting from "../db/setting.model.js";
 
 // export const getAllUsers = async (request, response) => {
 //   try {
@@ -105,6 +106,16 @@ export const updateUser = async (request, response) => {
   } catch (error) {
     console.log(error);
     return response.sendStatus(400);
+  }
+};
+
+export const getUserSettings = async (request, response) => {
+  try {
+    const userSetting = await Setting.findOne({ user: request.identify._id });
+    return response.status(200).json(userSetting);
+  } catch (error) {
+    console.log("error in getUserSettings", error);
+    return response.status(400).json({ error: `Error: ${error}` });
   }
 };
 

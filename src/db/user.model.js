@@ -103,7 +103,7 @@ export const getUserBySessionToken = (sessionToken) => {
 
 // Create
 export const createUser = (data) => {
-  return new UserModel(data).save().then((user) => user.toObject());
+  return new User(data).save();
 };
 
 // Delete

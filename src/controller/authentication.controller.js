@@ -1,3 +1,4 @@
+import Setting from "../db/setting.model.js";
 import {
   createUser,
   getUserByUsername,
@@ -37,6 +38,13 @@ export const register = async (request, response) => {
       },
     });
 
+    // Create user settings
+    const userSettings = await Setting.create({
+      user: user._id.toString(),
+    });
+
+    await userSettings.save();
+
     return response.status(200).json({
       error: false,
       message: "Success",
@@ -47,7 +55,7 @@ export const register = async (request, response) => {
     });
   } catch (error) {
     console.log(error);
-    return response.status(400).json({ error: true, message: "Error" });
+    return response.status(400).json({ error: `Error registering user` });
   }
 };
 

@@ -15,10 +15,24 @@
   - [ ] Reset password
   - [x] Change password
   - [ ] Change email
-  - [ ] Delete account
+  - [ ] Delete account (might use soft delete)
+    - [ ] delete user settings
+    - [ ] casade delete related posts
+    - [ ] casade delete related notifications
 
 - [x] Suggested users (except followed users, based on friends of friends ) (need to check again when create more users)
 - [ ] Notifications ( read/unread, soft delete, toggle setting for each type of notification )
+  - [ ] Create notification
+    - [ ] when user follow
+    - [x] when user like
+    - [ ] when user reply
+    - [x] when user share
+  - [ ] Check user settings before sending notification
+    - [ ] when user follow
+    - [ ] when user like
+    - [ ] when user reply
+    - [ ] when user share
+  - [ ] Debounce notifications to prevent spam
 - [ ] User
 
   - [x] Update profile
@@ -30,14 +44,27 @@
   - [ ] View Media of user (user posts with image)
   - [x] View Likes of user (liked posts)
 
+- [ ] User Settings
+
+  - [ ] Notifications preferences
+    - [ ] block notifications from specific user
+    - [ ] block notifications from specific type
+    - [ ] block notifications from specific post
+  - [ ] Change theme
+    - [ ] Change theme color
+    - [ ] Change accent color
+
 - [ ] Posts ( preview image (use URL.createObjectURL))
 
   - [x] Create post
   - [x] Read post
   - [x] Read all posts (pagination)
   - [x] Read replies of post
-  - [ ] Update post
-  - [x] Delete post
+  - [ ] Update post (only for Premium users)
+  - [ ] Delete post
+    - [ ] casade delete replies
+    - [ ] remove related notifications,
+    - [ ] update related documents
   - [x] Like post
   - [x] Share post
   - [x] View post
@@ -48,9 +75,11 @@
 <!-- models -->
 
 - [x] Users
+- [x] User settings
 - [x] Notifications
 - [x] Posts / Replies
 - [x] Views
+- [ ] Tags
 - [ ] Conversations
 - [ ] Messages
 

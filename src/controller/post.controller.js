@@ -3,6 +3,7 @@ import { User } from "../db/user.model.js";
 import Post from "../db/post.model.js";
 import Notification from "../db/notification.model.js";
 import View from "../db/view.model.js";
+import Setting from "../db/setting.model.js";
 
 export const createPost = async (request, response) => {
   const { text } = request.body;
@@ -123,10 +124,10 @@ export const getAllPosts = async (request, response) => {
       totalPosts,
       limit: parseInt(limit),
       skip: parseInt(skip),
-      numberOfPostsFetched:
-        totalPosts > limit + parseInt(skip)
-          ? parseInt(skip) + limit
-          : totalPosts,
+      numberOfPostsFetched: Math.min(
+        parseInt(skip) + parseInt(limit),
+        totalPosts
+      ),
     });
   } catch (error) {
     console.log(error);
@@ -173,10 +174,10 @@ export const getPostsByFollowing = async (request, response) => {
       totalPosts,
       limit: parseInt(limit),
       skip: parseInt(skip),
-      numberOfPostsFetched:
-        totalPosts > limit + parseInt(skip)
-          ? parseInt(skip) + limit
-          : totalPosts,
+      numberOfPostsFetched: Math.min(
+        parseInt(skip) + parseInt(limit),
+        totalPosts
+      ),
     });
   } catch (error) {
     console.log(error);
@@ -216,10 +217,10 @@ export const getPostsByUser = async (request, response) => {
       totalPosts,
       limit: parseInt(limit),
       skip: parseInt(skip),
-      numberOfPostsFetched:
-        totalPosts > limit + parseInt(skip)
-          ? parseInt(skip) + limit
-          : totalPosts,
+      numberOfPostsFetched: Math.min(
+        parseInt(skip) + parseInt(limit),
+        totalPosts
+      ),
     });
   } catch (error) {
     console.log(error);
@@ -258,10 +259,10 @@ export const getLikedPostsByUser = async (request, response) => {
       totalLikedPosts,
       limit: parseInt(limit),
       skip: parseInt(skip),
-      numberOfPostsFetched:
-        totalLikedPosts > limit + parseInt(skip)
-          ? parseInt(skip) + limit
-          : totalLikedPosts,
+      numberOfPostsFetched: Math.min(
+        parseInt(skip) + parseInt(limit),
+        totalLikedPosts
+      ),
     });
   } catch (error) {
     console.log(error);
@@ -365,14 +366,22 @@ export const toggleLikePost = async (request, response) => {
     // Check if the  post exists
     const post = await Post.findById(postID);
 
+    // Check auther notificaiton setting
+    const authorSetting = await Setting.findOne({ userId: post.author });
+    if (!authorSetting) {
+      return response.status(404).json({ error: "Author setting not found" });
+    }
+
     // Check if the user has already liked the post
     const isLiked = post.userLikes.includes(userID);
     if (!isLiked) {
       post.userLikes.push(userID);
       response.status(200).json({ message: `Post liked` });
 
-      // Send notification to the post author
-      const author = await User.findById(post.author);
+      // Check if the post author is the same as the user
+      if (post.author.toString() === userID) {
+        return;
+      }
 
       // check if notification already exists
       const likeNotification = await Notification.findOne({
@@ -382,7 +391,12 @@ export const toggleLikePost = async (request, response) => {
         post: postID,
       });
 
-      if (!likeNotification) {
+      // check if notification already exists or Setting blockedType doesn't included like or blockedPost doesn't include postID
+      if (
+        !likeNotification ||
+        authorSetting.blockedType.includes("like") ||
+        authorSetting.blockedPost.includes(postID)
+      ) {
         // send notification
         await Notification.create({
           from: userID,

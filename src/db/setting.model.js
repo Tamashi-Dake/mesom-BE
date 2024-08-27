@@ -2,7 +2,7 @@ import mongoose from "mongoose";
 
 const settingSchema = new mongoose.Schema(
   {
-    userId: {
+    user: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       required: true,
@@ -11,7 +11,7 @@ const settingSchema = new mongoose.Schema(
       blockedType: [
         {
           type: String,
-          enum: ["follow", "like", "comment", "reply", "share"],
+          enum: ["follow", "like", "reply", "share"],
         },
       ],
       blockedPost: [
