@@ -8,6 +8,12 @@ const settingSchema = new mongoose.Schema(
       required: true,
     },
     notificationPreferences: {
+      blockedUser: [
+        {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "User",
+        },
+      ],
       blockedType: [
         {
           type: String,

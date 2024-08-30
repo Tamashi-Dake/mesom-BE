@@ -46,6 +46,7 @@
 
 - [ ] User Settings
 
+  - [ ] Route
   - [ ] Notifications preferences
     - [ ] block notifications from specific user
     - [ ] block notifications from specific type
