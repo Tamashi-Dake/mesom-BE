@@ -44,9 +44,11 @@
   - [ ] View Media of user (user posts with image)
   - [x] View Likes of user (liked posts)
 
-- [ ] User Settings
+- [ ] Settings
 
-  - [ ] Route
+  - [x] Route
+    - [x] Get settings
+    - [x] Update settings
   - [ ] Notifications preferences
     - [ ] block notifications from specific user
     - [ ] block notifications from specific type
@@ -76,13 +78,22 @@
 <!-- models -->
 
 - [x] Users
-- [x] User settings
+- [x] Settings
 - [x] Notifications
 - [x] Posts / Replies
 - [x] Views
 - [ ] Tags
 - [ ] Conversations
 - [ ] Messages
+
+<!-- Middleware -->
+
+- [x] Check Auth
+- [x] Check User Status (id exists)
+- [x] Check Post Status (id exists)
+- [ ] Check Settings before sending notification
+- [ ] Check Owner of Post
+- [ ] Check Premium User
 
 <!-- More -->
 

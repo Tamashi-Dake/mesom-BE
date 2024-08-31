@@ -109,16 +109,6 @@ export const updateUser = async (request, response) => {
   }
 };
 
-export const getUserSettings = async (request, response) => {
-  try {
-    const userSetting = await Setting.findOne({ user: request.identify._id });
-    return response.status(200).json(userSetting);
-  } catch (error) {
-    console.log("error in getUserSettings", error);
-    return response.status(400).json({ error: `Error: ${error}` });
-  }
-};
-
 export const updatePassword = async (request, response) => {
   const { id } = request.params;
   const { username } = request.identify;

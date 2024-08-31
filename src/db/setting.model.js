@@ -7,19 +7,22 @@ const settingSchema = new mongoose.Schema(
       ref: "User",
       required: true,
     },
+    blockedUser: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+      },
+    ],
     notificationPreferences: {
-      blockedUser: [
-        {
-          type: mongoose.Schema.Types.ObjectId,
-          ref: "User",
+      blockedType: {
+        type: Object,
+        default: {
+          replie: true,
+          like: true,
+          follow: true,
+          share: true,
         },
-      ],
-      blockedType: [
-        {
-          type: String,
-          enum: ["follow", "like", "reply", "share"],
-        },
-      ],
+      },
       blockedPost: [
         {
           type: mongoose.Schema.Types.ObjectId,
