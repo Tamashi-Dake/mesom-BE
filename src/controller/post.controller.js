@@ -53,6 +53,7 @@ export const createPost = async (request, response) => {
   }
 };
 
+// TODO: Add notification
 export const createReplyPost = async (request, response) => {
   const { id: parentPostID } = request.params;
   const { text } = request.body;
@@ -359,45 +360,44 @@ export const deletePost = async (request, response) => {
   }
 };
 
+// TODO: Add notification
 export const toggleLikePost = async (request, response) => {
   const { id: postID } = request.params;
   const userID = request.identify._id.toString();
   try {
-    // Check if the  post exists
+    // Check if the post exists
     const post = await Post.findById(postID);
-
-    // Check auther notificaiton setting
-    const authorSetting = await Setting.findOne({ userId: post.author });
-    if (!authorSetting) {
-      return response.status(404).json({ error: "Author setting not found" });
-    }
 
     // Check if the user has already liked the post
     const isLiked = post.userLikes.includes(userID);
+
+    // check if notification already exists
+    const likeNotification = await Notification.findOne({
+      from: userID,
+      to: post.author,
+      type: "like",
+      post: postID,
+    });
+
     if (!isLiked) {
       post.userLikes.push(userID);
       response.status(200).json({ message: `Post liked` });
+      await post.save();
 
       // Check if the post author is the same as the user
       if (post.author.toString() === userID) {
         return;
       }
 
-      // check if notification already exists
-      const likeNotification = await Notification.findOne({
-        from: userID,
-        to: post.author,
-        type: "like",
-        post: postID,
-      });
-
-      // check if notification already exists or Setting blockedType doesn't included like or blockedPost doesn't include postID
-      if (
-        !likeNotification ||
-        authorSetting.blockedType.includes("like") ||
-        authorSetting.blockedPost.includes(postID)
-      ) {
-        // send notification
+      // check if notification already exists or the author has blocked the notification type or post
+      if (likeNotification) {
+        // Show the notification if the post is liked
+        await Notification.updateOne(
+          { _id: likeNotification._id },
+          { show: true }
+        );
+      } else if (!request.blockedNotification) {
+        // Create a new notification
         await Notification.create({
           from: userID,
           to: post.author,
@@ -408,14 +408,93 @@ export const toggleLikePost = async (request, response) => {
     } else {
       await Post.updateOne({ _id: postID }, { $pull: { userLikes: userID } });
       response.status(200).json({ message: `Post unliked` });
+
+      if (likeNotification) {
+        // Hide the notification if the post is unliked
+        await Notification.updateOne(
+          { _id: likeNotification._id },
+          { show: false }
+        );
+      }
     }
-    await post.save();
   } catch (error) {
     console.log(error);
     return response.status(400).json({ error: `Error: ${error}` });
   }
 };
 
+// export const toggleLikePost = async (request, response) => {
+//   const { id: postID } = request.params;
+//   const userID = request.identify._id.toString();
+
+//   try {
+//     // Check if the post exists and update likes atomically
+//     const post = await Post.findOneAndUpdate(
+//       { _id: postID },
+//       {
+//         [post.userLikes.includes(userID) ? "$pull" : "$push"]: {
+//           userLikes: userID,
+//         },
+//       },
+//       { new: true }
+//     );
+
+//     // Check if the user has liked or unliked the post
+//     const isLiked = post.userLikes.includes(userID);
+//     response
+//       .status(200)
+//       .json({ message: isLiked ? "Post liked" : "Post unliked" });
+
+//     // If the post author is the same as the user, skip notification
+//     if (post.author.toString() === userID) {
+//       return;
+//     }
+
+//     // Check if notification already exists
+//     const likeNotification = await Notification.findOne({
+//       from: userID,
+//       to: post.author,
+//       type: "like",
+//       post: postID,
+//     });
+
+//     // Handle notification
+
+//     // Check if the post is liked and the notification is not blocked
+//     if (isLiked && !request.blockedNotification) {
+//       // nếu tồn tại thông báo thì cập nhật lại thông báo
+//       if (likeNotification) {
+//         // Ẩn thông báo nếu unlike
+//         await Notification.updateOne(
+//           { _id: likeNotification._id },
+//           { show: false }
+//         );
+//       }
+//     } else if (!isLiked && !request.blockedNotification) {
+//       // Check if the post is not liked and the notification is not blocked
+//       if (likeNotification) {
+//         // Hiện thông báo nếu like
+//         await Notification.updateOne(
+//           { _id: likeNotification._id },
+//           { show: true }
+//         );
+//       } else {
+//         // tạo thông báo nếu chưa tồn tại
+//         await Notification.create({
+//           from: userID,
+//           to: post.author,
+//           type: "like",
+//           post: postID,
+//         });
+//       }
+//     }
+//   } catch (error) {
+//     console.log(error);
+//     return response.status(400).json({ error: `Error: ${error.message}` });
+//   }
+// };
+
+// TODO: Add notification
 export const toggleSharePost = async (request, response) => {
   const { id: postID } = request.params;
   const userID = request.identify._id.toString();

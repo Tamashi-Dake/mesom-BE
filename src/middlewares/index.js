@@ -2,6 +2,7 @@ import get from "lodash/get.js";
 import merge from "lodash/merge.js";
 import { getUserById, getUserBySessionToken } from "../db/user.model.js";
 import Post from "../db/post.model.js";
+import Setting from "../db/setting.model.js";
 
 export const isAuthenticated = async (request, response, next) => {
   try {
@@ -99,18 +100,59 @@ export const checkUserStatus = async (request, response, next) => {
 
 //TODO: check if user is the owner of the resource
 
-// Middleware để kiểm tra nếu req.params.id là một ObjectId hợp lệ
-export const checkValidObjectId = (req, res, next) => {
-  const { id } = req.params;
+// Middleware để kiểm tra nếu request.params.id là một ObjectId hợp lệ
+export const checkValidObjectId = (request, response, next) => {
+  const { id } = request.params;
   if (id && !mongoose.Types.ObjectId.isValid(id)) {
     // Nếu id không hợp lệ, trả về lỗi 400
-    return res.status(400).json({
+    return response.status(400).json({
       error: true,
       message: `"${id}" is not a valid ID`,
     });
   }
   // Nếu id hợp lệ, tiếp tục xử lý
   next();
+};
+
+// Middleware to check user settings
+export const checkUserNotificationSettings = async (
+  request,
+  response,
+  next
+) => {
+  // Get the user or author ID from the request object
+  let id = request.params.id; // might be the user ID or the post ID
+  const { notificationType } = request.body;
+  if (!notificationType)
+    return res.status(400).json({ error: "Notification type is required" });
+  try {
+    // if id is post id, get the author id
+    const post = await Post.findById(id);
+    if (post) id = post.author;
+
+    // Fetch user settings
+    const userSettings = await Setting.findOne({ user: id });
+    if (!userSettings) {
+      return response.status(404).json({ error: "User settings not found" });
+    }
+
+    // Check if notifications.blockedType are enabled and notification.blockedPosts contains the post ID
+    const isTypeBlocked =
+      !userSettings.notificationPreferences.blockedType[notificationType];
+    const isPostBlocked =
+      userSettings.notificationPreferences.blockedPost.includes(id);
+
+    // If the user has blocked the notification type or post, set a flag in the request object
+    if (isTypeBlocked || isPostBlocked) {
+      request.blockedNotification = true;
+    }
+
+    // Continue to the next middleware or route handler
+    next();
+  } catch (error) {
+    console.error("Error checking user settings:", error);
+    return response.status(500).json({ error: "Server error" });
+  }
 };
 
 // only work with User documents

@@ -17,7 +17,7 @@ const settingSchema = new mongoose.Schema(
       blockedType: {
         type: Object,
         default: {
-          replie: true,
+          reply: true,
           like: true,
           follow: true,
           share: true,

@@ -29,7 +29,7 @@
     - [x] when user share
   - [ ] Check user settings before sending notification
     - [ ] when user follow
-    - [ ] when user like
+    - [x] when user like
     - [ ] when user reply
     - [ ] when user share
   - [ ] Debounce notifications to prevent spam
@@ -73,7 +73,8 @@
   - [x] View post
   - [ ] Tags
 
-- [ ] User settings ( theme, email notifications, etc )
+- [ ] Limit api request (express-rate-limit)
+- [ ] Add cron job to clean up notifications (item is hiden or deleted)
 
 <!-- models -->
 
@@ -91,7 +92,7 @@
 - [x] Check Auth
 - [x] Check User Status (id exists)
 - [x] Check Post Status (id exists)
-- [ ] Check Settings before sending notification
+- [x] Check Settings before sending notification
 - [ ] Check Owner of Post
 - [ ] Check Premium User
 

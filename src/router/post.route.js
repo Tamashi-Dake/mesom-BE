@@ -14,6 +14,7 @@ import {
 } from "../controller/post.controller.js";
 import {
   checkPostStatus,
+  checkUserNotificationSettings,
   checkUserStatus,
   isAuthenticated,
 } from "../middlewares/index.js";
@@ -37,7 +38,13 @@ export default (router) => {
   router.delete("/posts/:id", isAuthenticated, checkPostStatus, deletePost);
 
   // reply routes
-  router.post("/posts/:id", isAuthenticated, createReplyPost);
+  // TODO: check author notification settings
+  router.post(
+    "/posts/:id",
+    isAuthenticated,
+    // checkUserNotificationSettings,
+    createReplyPost
+  );
   router.get(
     "/posts/replies/:id",
     isAuthenticated,
@@ -64,12 +71,14 @@ export default (router) => {
     "/posts/like/:id",
     isAuthenticated,
     checkPostStatus,
+    checkUserNotificationSettings,
     toggleLikePost
   );
   router.post(
     "/posts/share/:id",
     isAuthenticated,
     checkPostStatus,
+    checkUserNotificationSettings,
     toggleSharePost
   );
   router.post(
