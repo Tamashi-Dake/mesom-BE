@@ -85,16 +85,43 @@ export const createReplyPost = async (request, response) => {
       images = imageSecureURLs;
     }
 
-    // Create a post
-    const post = await Post.create({
+    // Check parentpost author
+    const parentPost = await Post.findById(parentPostID);
+
+    // Create a replyPost
+    const replyPost = await Post.create({
       author: userID,
       text,
       images,
       parentPostID: parentPostID,
     });
+    await replyPost.save();
 
-    await post.save();
-    return response.status(201).json(post);
+    // check if notification already exists
+    const replyNotification = await Notification.findOne({
+      from: userID,
+      to: parentPost.author,
+      type: "reply",
+      post: parentPostID,
+    });
+
+    // check if the post author is the same as current user
+    if (parentPost.author.toString() === userID) {
+      return response.status(201).json(replyPost);
+    }
+
+    // check if the author has blocked the notification
+    if (!request.blockedNotification) {
+      // Create a new notification
+      await Notification.create({
+        from: userID,
+        to: parentPost.author,
+        type: "reply",
+        post: parentPostID,
+      });
+    }
+
+    return response.status(201).json(replyPost);
   } catch (error) {
     console.log(error);
     return response.status(400).json({ error: `Error: ${error}` });
@@ -360,7 +387,6 @@ export const deletePost = async (request, response) => {
   }
 };
 
-// TODO: Add notification
 export const toggleLikePost = async (request, response) => {
   const { id: postID } = request.params;
   const userID = request.identify._id.toString();
@@ -381,8 +407,8 @@ export const toggleLikePost = async (request, response) => {
 
     if (!isLiked) {
       post.userLikes.push(userID);
-      response.status(200).json({ message: `Post liked` });
       await post.save();
+      response.status(200).json({ message: `Post liked` });
 
       // Check if the post author is the same as the user
       if (post.author.toString() === userID) {
@@ -423,78 +449,6 @@ export const toggleLikePost = async (request, response) => {
   }
 };
 
-// export const toggleLikePost = async (request, response) => {
-//   const { id: postID } = request.params;
-//   const userID = request.identify._id.toString();
-
-//   try {
-//     // Check if the post exists and update likes atomically
-//     const post = await Post.findOneAndUpdate(
-//       { _id: postID },
-//       {
-//         [post.userLikes.includes(userID) ? "$pull" : "$push"]: {
-//           userLikes: userID,
-//         },
-//       },
-//       { new: true }
-//     );
-
-//     // Check if the user has liked or unliked the post
-//     const isLiked = post.userLikes.includes(userID);
-//     response
-//       .status(200)
-//       .json({ message: isLiked ? "Post liked" : "Post unliked" });
-
-//     // If the post author is the same as the user, skip notification
-//     if (post.author.toString() === userID) {
-//       return;
-//     }
-
-//     // Check if notification already exists
-//     const likeNotification = await Notification.findOne({
-//       from: userID,
-//       to: post.author,
-//       type: "like",
-//       post: postID,
-//     });
-
-//     // Handle notification
-
-//     // Check if the post is liked and the notification is not blocked
-//     if (isLiked && !request.blockedNotification) {
-//       // nếu tồn tại thông báo thì cập nhật lại thông báo
-//       if (likeNotification) {
-//         // Ẩn thông báo nếu unlike
-//         await Notification.updateOne(
-//           { _id: likeNotification._id },
-//           { show: false }
-//         );
-//       }
-//     } else if (!isLiked && !request.blockedNotification) {
-//       // Check if the post is not liked and the notification is not blocked
-//       if (likeNotification) {
-//         // Hiện thông báo nếu like
-//         await Notification.updateOne(
-//           { _id: likeNotification._id },
-//           { show: true }
-//         );
-//       } else {
-//         // tạo thông báo nếu chưa tồn tại
-//         await Notification.create({
-//           from: userID,
-//           to: post.author,
-//           type: "like",
-//           post: postID,
-//         });
-//       }
-//     }
-//   } catch (error) {
-//     console.log(error);
-//     return response.status(400).json({ error: `Error: ${error.message}` });
-//   }
-// };
-
-// TODO: Add notification
 export const toggleSharePost = async (request, response) => {
   const { id: postID } = request.params;
   const userID = request.identify._id.toString();
@@ -504,19 +458,32 @@ export const toggleSharePost = async (request, response) => {
 
     // Check if the user has already shared the post
     const isShared = post.userShared.includes(userID);
+    // check if notification already exists
+    const shareNotification = await Notification.findOne({
+      from: userID,
+      to: post.author,
+      type: "share",
+      post: postID,
+    });
+
     if (!isShared) {
       post.userShared.push(userID);
+      await post.save();
       response.status(200).json({ message: `Post shared` });
 
-      // check if notification already exists
-      const likeNotification = await Notification.findOne({
-        from: userID,
-        to: post.author,
-        type: "share",
-        post: postID,
-      });
+      // Check if the post author is the same as the user
+      if (post.author.toString() === userID) {
+        return;
+      }
 
-      if (!likeNotification) {
+      // check if notification already exists or the author has blocked the notification type or post
+      if (shareNotification) {
+        // Show the notification if the post is liked
+        await Notification.updateOne(
+          { _id: shareNotification._id },
+          { show: true }
+        );
+      } else if (!request.blockedNotification) {
         // send notification
         await Notification.create({
           from: userID,
@@ -528,8 +495,14 @@ export const toggleSharePost = async (request, response) => {
     } else {
       await Post.updateOne({ _id: postID }, { $pull: { userShared: userID } });
       response.status(200).json({ message: `Post unshared` });
+      if (shareNotification) {
+        // Hide the notification if the post is unliked
+        await Notification.updateOne(
+          { _id: shareNotification._id },
+          { show: false }
+        );
+      }
     }
-    await post.save();
   } catch (error) {
     console.log(error);
     return response.status(400).json({ error: `Error: ${error}` });

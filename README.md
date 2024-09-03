@@ -22,6 +22,7 @@
 
 - [x] Suggested users (except followed users, based on friends of friends ) (need to check again when create more users)
 - [ ] Notifications ( read/unread, soft delete, toggle setting for each type of notification )
+
   - [ ] Create notification
     - [ ] when user follow
     - [x] when user like
@@ -30,9 +31,17 @@
   - [ ] Check user settings before sending notification
     - [ ] when user follow
     - [x] when user like
-    - [ ] when user reply
-    - [ ] when user share
+    - [x] when user reply
+    - [x] when user share
+  - [ ] Read notification
+    - [ ] Mark notification as read
+  - [ ] Delete notification
+
+    - [ ] Mark notification as deleted
+    - [ ] Hide notification when: unfollow user, delete post/reply, unlike post, unshare post
+
   - [ ] Debounce notifications to prevent spam
+
 - [ ] User
 
   - [x] Update profile

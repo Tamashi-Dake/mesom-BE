@@ -124,7 +124,9 @@ export const checkUserNotificationSettings = async (
   let id = request.params.id; // might be the user ID or the post ID
   const { notificationType } = request.body;
   if (!notificationType)
-    return res.status(400).json({ error: "Notification type is required" });
+    return response
+      .status(400)
+      .json({ error: "Notification type is required" });
   try {
     // if id is post id, get the author id
     const post = await Post.findById(id);

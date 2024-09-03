@@ -38,11 +38,11 @@ export default (router) => {
   router.delete("/posts/:id", isAuthenticated, checkPostStatus, deletePost);
 
   // reply routes
-  // TODO: check author notification settings
   router.post(
     "/posts/:id",
     isAuthenticated,
-    // checkUserNotificationSettings,
+    checkPostStatus,
+    checkUserNotificationSettings,
     createReplyPost
   );
   router.get(
