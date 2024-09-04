@@ -9,7 +9,6 @@ import {
 import Notification from "../db/notification.model.js";
 
 import { authentication, random } from "../util/authenticationCrypto.js";
-import Setting from "../db/setting.model.js";
 
 // export const getAllUsers = async (request, response) => {
 //   try {
@@ -197,65 +196,91 @@ export const updatePassword = async (request, response) => {
 };
 
 export const toggleFollowUser = async (request, response) => {
+  const { id: targetUserId } = request.params;
+  const currentUserId = request.identify._id.toString();
   try {
-    const { id } = request.params;
-    const user = await getUserById(id);
-    const currentUser = await getUserById(request.identify._id);
-
-    // Check if user / currentUser is missing
-    if (!user || !currentUser) {
-      return response.status(400).json({ error: "User does not exist" });
-    }
+    // get current user and target user
+    const currentUser = await getUserById(currentUserId);
+    const targetUser = await getUserById(targetUserId);
 
     // Check if user is trying to follow themselves
-    if (currentUser._id.toString() === user._id.toString()) {
+    if (currentUserId === targetUserId) {
       return response.status(400).json({ error: "You cannot follow yourself" });
     }
 
     // Check if user is already following
-    const isFollowing = currentUser.following.includes(user._id);
+    const isFollowing = currentUser.following.includes(targetUser._id);
 
-    // TODO: Add following limit (e.g. 100 for free users, 500 for verified users)
+    // check if notification already exists
+    const followNotification = await Notification.findOne({
+      type: "follow",
+      from: currentUser._id,
+      to: targetUser._id,
+    });
+
+    // TODO: Add
+    // following limit (e.g. 1000 for free users, 5000 for verified users)
     // followers limit (e.g. 1000 for free users, 5000 for verified users)
 
+    // check following limit for current user
+    if (
+      currentUser.following.length >= 1000 &&
+      currentUser.verified === false
+    ) {
+      return response.status(400).json({
+        error:
+          "You have reached the maximum following limit, please upgrade to a verified account",
+      });
+    }
+
+    // check followers limit for target user
+    if (targetUser.followers.length >= 1000 && targetUser.verified === false) {
+      return response.status(400).json({
+        error:
+          "This user has reached the maximum followers limit, please ask them to upgrade to a verified account",
+      });
+    }
+
+    // Follow or unfollow user
     if (!isFollowing) {
       // Add user to following list
-      currentUser.following.push(user._id);
-      user.followers.push(currentUser._id);
+      currentUser.following.push(targetUser._id);
+      targetUser.followers.push(currentUser._id);
       await currentUser.save();
-      await user.save();
+      await targetUser.save();
 
-      // check if notification already exists
-      const notification = await Notification.findOne({
-        type: "follow",
-        from: currentUser._id,
-        to: user._id,
-      });
-
-      // check if user don't want to receive this type of notification
-      // TODO: add notification settings (for type of notifications)
-
-      if (!notification) {
-        // send notification to user
-        await Notification({
+      if (followNotification) {
+        await Notification.updateOne(
+          { _id: followNotification._id },
+          { show: true }
+        );
+      } else if (!request.blockedNotification) {
+        await Notification.create({
+          from: currentUserId,
+          to: targetUserId,
           type: "follow",
-          from: currentUser._id,
-          to: user._id,
         });
       }
 
       return response.status(200).json({
-        message: `${user.username.toString()} followed successfully`,
+        message: `${targetUser.username} followed successfully`,
       });
     } else {
       // Remove user from following list
-      currentUser.following.pull(user._id);
-      user.followers.pull(currentUser._id);
+      currentUser.following.pull(targetUser._id);
+      targetUser.followers.pull(currentUser._id);
       await currentUser.save();
-      await user.save();
+      await targetUser.save();
+
+      if (followNotification) {
+        await Notification.updateOne(
+          { _id: followNotification._id },
+          { show: false }
+        );
+      }
 
       return response.status(200).json({
-        message: `${user.username.toString()} unfollowed successfully`,
+        message: `${targetUser.username.toString()} unfollowed successfully`,
       });
     }
   } catch (error) {

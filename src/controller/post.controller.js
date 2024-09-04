@@ -3,7 +3,6 @@ import { User } from "../db/user.model.js";
 import Post from "../db/post.model.js";
 import Notification from "../db/notification.model.js";
 import View from "../db/view.model.js";
-import Setting from "../db/setting.model.js";
 
 export const createPost = async (request, response) => {
   const { text } = request.body;
@@ -53,7 +52,6 @@ export const createPost = async (request, response) => {
   }
 };
 
-// TODO: Add notification
 export const createReplyPost = async (request, response) => {
   const { id: parentPostID } = request.params;
   const { text } = request.body;
@@ -96,14 +94,6 @@ export const createReplyPost = async (request, response) => {
       parentPostID: parentPostID,
     });
     await replyPost.save();
-
-    // check if notification already exists
-    const replyNotification = await Notification.findOne({
-      from: userID,
-      to: parentPost.author,
-      type: "reply",
-      post: parentPostID,
-    });
 
     // check if the post author is the same as current user
     if (parentPost.author.toString() === userID) {
@@ -163,7 +153,6 @@ export const getAllPosts = async (request, response) => {
   }
 };
 
-// get posts by author that user are following
 export const getPostsByFollowing = async (request, response) => {
   const userId = request.identify._id.toString();
   const { limit = 30, skip = 0 } = request.body;
@@ -212,6 +201,7 @@ export const getPostsByFollowing = async (request, response) => {
     return response.status(400).json({ error: `Error at ${error}` });
   }
 };
+
 export const getPostsByUser = async (request, response) => {
   const userId = request.params.id;
   const { limit = 30, skip = 0 } = request.query;
@@ -478,13 +468,11 @@ export const toggleSharePost = async (request, response) => {
 
       // check if notification already exists or the author has blocked the notification type or post
       if (shareNotification) {
-        // Show the notification if the post is liked
         await Notification.updateOne(
           { _id: shareNotification._id },
           { show: true }
         );
       } else if (!request.blockedNotification) {
-        // send notification
         await Notification.create({
           from: userID,
           to: post.author,
@@ -496,7 +484,6 @@ export const toggleSharePost = async (request, response) => {
       await Post.updateOne({ _id: postID }, { $pull: { userShared: userID } });
       response.status(200).json({ message: `Post unshared` });
       if (shareNotification) {
-        // Hide the notification if the post is unliked
         await Notification.updateOne(
           { _id: shareNotification._id },
           { show: false }

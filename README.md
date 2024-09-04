@@ -2,7 +2,7 @@
 
 ### TODO
 
-<!-- features -->
+#### Features
 
 - [ ] Authentication
 
@@ -28,11 +28,7 @@
     - [x] when user like
     - [ ] when user reply
     - [x] when user share
-  - [ ] Check user settings before sending notification
-    - [ ] when user follow
-    - [x] when user like
-    - [x] when user reply
-    - [x] when user share
+  - [x] Check user settings before sending notification (follow, like, reply, share)
   - [ ] Read notification
     - [ ] Mark notification as read
   - [ ] Delete notification
@@ -85,7 +81,7 @@
 - [ ] Limit api request (express-rate-limit)
 - [ ] Add cron job to clean up notifications (item is hiden or deleted)
 
-<!-- models -->
+#### Models
 
 - [x] Users
 - [x] Settings
@@ -96,7 +92,7 @@
 - [ ] Conversations
 - [ ] Messages
 
-<!-- Middleware -->
+#### Middlewares
 
 - [x] Check Auth
 - [x] Check User Status (id exists)
@@ -105,7 +101,7 @@
 - [ ] Check Owner of Post
 - [ ] Check Premium User
 
-<!-- More -->
+#### More
 
 - [ ] User page (Tabs: Posts (Post and Shared Post), Replies (also include Posts), Media(Post with Image), Likes(Liked Posts))
 - [ ] Search (Users, Posts, Tags)

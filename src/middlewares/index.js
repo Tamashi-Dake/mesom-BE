@@ -121,7 +121,8 @@ export const checkUserNotificationSettings = async (
   next
 ) => {
   // Get the user or author ID from the request object
-  let id = request.params.id; // might be the user ID or the post ID
+  const id = request.params.id; // might be the user ID or the post ID
+  let userId = id; // default to the ID from the request params
   const { notificationType } = request.body;
   if (!notificationType)
     return response
@@ -130,10 +131,10 @@ export const checkUserNotificationSettings = async (
   try {
     // if id is post id, get the author id
     const post = await Post.findById(id);
-    if (post) id = post.author;
+    if (post) userId = post.author;
 
     // Fetch user settings
-    const userSettings = await Setting.findOne({ user: id });
+    const userSettings = await Setting.findOne({ user: userId });
     if (!userSettings) {
       return response.status(404).json({ error: "User settings not found" });
     }
