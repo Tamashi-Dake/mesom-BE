@@ -29,6 +29,9 @@ const notificationSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    deletedAt: {
+      type: Date,
+    },
     show: {
       type: Boolean,
       default: true,
@@ -36,9 +39,8 @@ const notificationSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
-// Tạo index TTL nhưng không có default cho deleteAt
-// TTL: 1 phút
-notificationSchema.index({ deleteAt: 1 }, { expireAfterSeconds: 60 });
+// Tạo index TTL dựa trên trường deletedAt
+notificationSchema.index({ deletedAt: 1 }, { expireAfterSeconds: 60 });
 
 const Notification = mongoose.model("Notification", notificationSchema);
 

@@ -1,4 +1,10 @@
-import { getUserNotifications } from "../controller/notification.controller.js";
+import {
+  deleteAllNotifications,
+  deleteNotification,
+  getUserNotifications,
+  markAllNotificationsAsRead,
+  toggleReadNotification,
+} from "../controller/notification.controller.js";
 import { isAuthenticated } from "../middlewares/index.js";
 
 export default (router) => {
@@ -6,11 +12,10 @@ export default (router) => {
   router.get("/notifications", isAuthenticated, getUserNotifications);
 
   // mark notification as read / unread
+  router.patch("/notifications/:id", isAuthenticated, toggleReadNotification);
+  router.patch("/notifications", isAuthenticated, markAllNotificationsAsRead);
 
   // delete notification
-
-  // notification settings
-  // don't send this type of notification
-
-  // don't send notification from this post
+  router.delete("/notifications/:id", isAuthenticated, deleteNotification);
+  router.delete("/notifications", isAuthenticated, deleteAllNotifications);
 };

@@ -472,13 +472,17 @@ export const toggleSharePost = async (request, response) => {
           { _id: shareNotification._id },
           { show: true }
         );
-      } else if (!request.blockedNotification) {
-        await Notification.create({
-          from: userID,
-          to: post.author,
-          type: "share",
-          post: postID,
-        });
+      } else {
+        if (request.blockedNotification) {
+          console.log("User currently blocking notification.");
+        } else {
+          await Notification.create({
+            from: userID,
+            to: post.author,
+            type: "share",
+            post: postID,
+          });
+        }
       }
     } else {
       await Post.updateOne({ _id: postID }, { $pull: { userShared: userID } });

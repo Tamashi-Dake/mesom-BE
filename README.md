@@ -23,18 +23,17 @@
 - [x] Suggested users (except followed users, based on friends of friends ) (need to check again when create more users)
 - [ ] Notifications ( read/unread, soft delete, toggle setting for each type of notification )
 
-  - [ ] Create notification
-    - [ ] when user follow
-    - [x] when user like
-    - [ ] when user reply
-    - [x] when user share
+  - [x] Create notification (follow, like, reply, share)
   - [x] Check user settings before sending notification (follow, like, reply, share)
-  - [ ] Read notification
-    - [ ] Mark notification as read
-  - [ ] Delete notification
+  - [x] Read notification
+    - [x] Mark notification as read
+    - [x] Mark all notifications as read
+  - [x] Delete notification
 
-    - [ ] Mark notification as deleted
-    - [ ] Hide notification when: unfollow user, delete post/reply, unlike post, unshare post
+    - [x] Mark notification as deleted
+    - [x] Mark all notifications as deleted
+    - [x] Set TTL for notification
+    - [ ] Update cronjob
 
   - [ ] Debounce notifications to prevent spam
 
@@ -56,8 +55,8 @@
     - [x] Update settings
   - [ ] Notifications preferences
     - [ ] block notifications from specific user
-    - [ ] block notifications from specific type
-    - [ ] block notifications from specific post
+    - [x] block notifications from specific type
+    - [x] block notifications from specific post
   - [ ] Change theme
     - [ ] Change theme color
     - [ ] Change accent color
