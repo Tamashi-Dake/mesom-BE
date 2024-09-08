@@ -160,3 +160,31 @@ export const logout = async (request, response) => {
       .json({ error: true, message: "Error logging out" });
   }
 };
+
+export const getCurrentUser = async (request, response) => {
+  try {
+    // get session token from request cookies
+    const sessionToken = request.cookies["mesom-auth"];
+
+    // check if session token is missing
+    if (!sessionToken) {
+      return response
+        .status(401)
+        .json({ error: true, message: "Unauthorized" });
+    }
+
+    // get current user by session token
+    const currentUser = await getUserBySessionToken(sessionToken);
+    if (!currentUser) {
+      return response
+        .status(400)
+        .json({ error: true, message: "User does not exist" });
+    }
+
+    // return current user
+    return response.status(200).json(currentUser);
+  } catch (error) {
+    console.log(error);
+    return response.status(400).json({ error: "Error getting current user" });
+  }
+};

@@ -163,7 +163,7 @@ export const getPostsByFollowing = async (request, response) => {
     const following = user.following;
 
     // get posts from user in following
-    const feedPosts = await Post.find({
+    const posts = await Post.find({
       author: { $in: following },
       parentPostID: { $exists: false },
     })
@@ -174,7 +174,7 @@ export const getPostsByFollowing = async (request, response) => {
         path: "author",
         select: " displayName username profile.avatar",
       });
-    if (!feedPosts) {
+    if (!posts) {
       return response
         .status(404)
         .json({ message: "You aren't following anyone" });
@@ -187,7 +187,7 @@ export const getPostsByFollowing = async (request, response) => {
     });
 
     return response.status(200).json({
-      feedPosts,
+      posts,
       totalPosts,
       limit: parseInt(limit),
       skip: parseInt(skip),
