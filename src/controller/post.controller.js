@@ -1,108 +1,136 @@
 import { v2 as cloudinary } from "cloudinary";
+import streamifier from "streamifier";
+
 import { User } from "../db/user.model.js";
 import Post from "../db/post.model.js";
 import Notification from "../db/notification.model.js";
 import View from "../db/view.model.js";
 
-export const createPost = async (request, response) => {
-  const { text } = request.body;
-  let { images } = request.body;
-  const userID = request.identify._id.toString();
+export const createPost = async (req, res) => {
+  const {
+    text,
+    // , images = []
+  } = req.body;
+  const files = req.files;
+  const userID = req.identify._id.toString();
 
   try {
-    // console.log(text);
-    // console.log(images);
-
-    // Check if the post has text or images
-    if (!text && !images) {
-      return response
+    // Kiểm tra xem bài đăng có văn bản hoặc hình ảnh không
+    if (!text && files.length === 0) {
+      return res
         .status(400)
-        .json({ error: "Plese provide text or image in the post" });
+        .json({ error: "Please provide text or image in the post" });
     }
 
-    // Upload images to cloudinary (max 4 images)
-    if (images && images.length > 4) {
-      return response
+    // Kiểm tra số lượng hình ảnh
+    if (files.length > 4) {
+      return res
         .status(400)
-        .json({ error: "You can upload maximum 4 images" });
-    } else if (images && images.length > 0) {
-      // Upload images to cloudinary and get the image URLs form secure_url
-      const imageSecureURLs = [];
-      for (let i = 0; i < images.length; i++) {
-        const uploadResponse = await cloudinary.uploader.upload(images[i], {
-          folder: "PostImage",
-        });
-        imageSecureURLs.push(uploadResponse.secure_url);
-      }
-      images = imageSecureURLs;
+        .json({ error: "You can upload a maximum of 4 images" });
     }
 
-    // Create a post
+    // Tải lên hình ảnh nếu có
+    // const imageSecureURLs =
+    //   images.length > 0
+    //     ? await Promise.all(
+    //         images.map((image) =>
+    //           cloudinary.uploader
+    //             .upload(image, { folder: "PostImage" })
+    //             .then((uploadResponse) => uploadResponse.secure_url)
+    //         )
+    //       )
+    //     : [];
+    const imageSecureURLs =
+      files.length > 0
+        ? await Promise.all(
+            files.map(
+              (file) =>
+                new Promise((resolve, reject) => {
+                  const uploadStream = cloudinary.uploader.upload_stream(
+                    { folder: "Mesom/PostImage" },
+                    (error, result) => {
+                      if (error) return reject(error);
+                      resolve(result.secure_url);
+                    }
+                  );
+                  streamifier.createReadStream(file.buffer).pipe(uploadStream);
+                })
+            )
+          )
+        : [];
+
+    // Tạo bài đăng
     const post = await Post.create({
       author: userID,
       text,
-      images,
+      images: imageSecureURLs,
     });
 
-    await post.save();
-    return response.status(201).json(post);
+    return res.status(201).json(post);
   } catch (error) {
-    console.log(error);
-    return response.status(400).json({ error: `Error: ${error}` });
+    console.error(error);
+    return res.status(500).json({ error: `Lỗi: ${error.message || error}` });
   }
 };
 
-export const createReplyPost = async (request, response) => {
-  const { id: parentPostID } = request.params;
-  const { text } = request.body;
-  let { images } = request.body;
-  const userID = request.identify._id.toString();
+// TODO: Làm như trên
+export const createReplyPost = async (req, res) => {
+  const { id: parentPostID } = req.params;
+  const { text, images = [] } = req.body;
+  const userID = req.identify._id.toString();
 
   try {
-    // Check if the post has text or images
-    if (!text && !images) {
-      return response
+    // Kiểm tra xem bài đăng có văn bản hoặc hình ảnh không
+    if (!text && images.length === 0) {
+      return res
         .status(400)
-        .json({ error: "Plese provide text or image in the reply post" });
+        .json({ error: "Please provide text or image in the reply post" });
     }
 
-    // Upload images to cloudinary (max 4 images)
-    if (images && images.length > 4) {
-      return response
+    // Kiểm tra số lượng hình ảnh
+    if (images.length > 4) {
+      return res
         .status(400)
-        .json({ error: "You can upload maximum 4 images" });
-    } else if (images && images.length > 0) {
-      // Upload images to cloudinary and get the image URLs form secure_url
-      const imageSecureURLs = [];
-      for (let i = 0; i < images.length; i++) {
-        const uploadResponse = await cloudinary.uploader.upload(images[i], {
-          folder: "PostImage",
-        });
-        imageSecureURLs.push(uploadResponse.secure_url);
-      }
-      images = imageSecureURLs;
+        .json({ error: "You can upload a maximum of 4 images" });
     }
 
-    // Check parentpost author
+    // Tải lên hình ảnh nếu có
+    const imageSecureURLs =
+      images.length > 0
+        ? await Promise.all(
+            images.map((image) =>
+              cloudinary.uploader
+                .upload(image, { folder: "PostImage" })
+                .then((uploadResponse) => uploadResponse.secure_url)
+            )
+          )
+        : [];
+
+    // Kiểm tra bài đăng gốc
     const parentPost = await Post.findById(parentPostID);
+    if (!parentPost) {
+      return res.status(404).json({ error: "Parent post doesn't exist" });
+    }
 
-    // Create a replyPost
+    // Tạo bài trả lời
     const replyPost = await Post.create({
       author: userID,
       text,
-      images,
-      parentPostID: parentPostID,
+      images: imageSecureURLs,
+      parentPostID,
     });
-    await replyPost.save();
 
-    // check if the post author is the same as current user
+    // TODO: Cập nhật số lượng phản hồi trong bài đăng gốc
+    await Post.updateOne({ _id: parentPostID }, { $inc: { userReplies: 1 } });
+
+    // Kiểm tra xem người dùng có phải là tác giả của bài gốc không
     if (parentPost.author.toString() === userID) {
-      return response.status(201).json(replyPost);
+      return res.status(201).json(replyPost);
     }
 
-    // check if the author has blocked the notification
-    if (!request.blockedNotification) {
-      // Create a new notification
+    // Kiểm tra xem người dùng có chặn thông báo không
+    if (!req.blockedNotification) {
+      // Tạo thông báo mới
       await Notification.create({
         from: userID,
         to: parentPost.author,
@@ -111,10 +139,10 @@ export const createReplyPost = async (request, response) => {
       });
     }
 
-    return response.status(201).json(replyPost);
+    return res.status(201).json(replyPost);
   } catch (error) {
-    console.log(error);
-    return response.status(400).json({ error: `Error: ${error}` });
+    console.error(error);
+    return res.status(500).json({ error: `Lỗi: ${error.message || error}` });
   }
 };
 

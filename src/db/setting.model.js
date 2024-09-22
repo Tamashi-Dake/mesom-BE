@@ -29,6 +29,12 @@ const settingSchema = new mongoose.Schema(
           ref: "Post",
         },
       ],
+      blockedUser: [
+        {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "User",
+        },
+      ],
     },
     themePreferences: {
       theme: {
