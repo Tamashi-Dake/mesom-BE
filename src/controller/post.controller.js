@@ -6,6 +6,9 @@ import Post from "../db/post.model.js";
 import Notification from "../db/notification.model.js";
 import View from "../db/view.model.js";
 
+// TODO: refactor interaction functions to return updated value
+// => react-query don't have to refetch all data
+
 export const createPost = async (req, res) => {
   const {
     text,

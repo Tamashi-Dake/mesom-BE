@@ -246,8 +246,6 @@ export const toggleFollowUser = async (request, response) => {
       // Add user to following list
       currentUser.following.push(targetUser._id);
       targetUser.followers.push(currentUser._id);
-      await currentUser.save();
-      await targetUser.save();
 
       if (followNotification) {
         await Notification.updateOne(
@@ -261,16 +259,10 @@ export const toggleFollowUser = async (request, response) => {
           type: "follow",
         });
       }
-
-      return response.status(200).json({
-        message: `${targetUser.username} followed successfully`,
-      });
     } else {
       // Remove user from following list
       currentUser.following.pull(targetUser._id);
       targetUser.followers.pull(currentUser._id);
-      await currentUser.save();
-      await targetUser.save();
 
       if (followNotification) {
         await Notification.updateOne(
@@ -278,37 +270,58 @@ export const toggleFollowUser = async (request, response) => {
           { show: false }
         );
       }
-
-      return response.status(200).json({
-        message: `${targetUser.username.toString()} unfollowed successfully`,
-      });
     }
+
+    // Save changes to both users
+    await currentUser.save();
+    await targetUser.save();
+
+    const updatedFollowers = targetUser.followers;
+
+    return response.status(200).json({
+      message: !isFollowing
+        ? `${targetUser.username} followed successfully`
+        : `${targetUser.username} unfollowed successfully`,
+      followers: updatedFollowers,
+    });
   } catch (error) {
-    console.log("Error in toggleFollowUser", error);
+    console.log("Error when follow user", error);
     return response.status(400).json({ error: `Error: ${error}` });
   }
 };
 
 export const getSuggestedUsers = async (request, response) => {
+  const userId = request.identify._id;
   try {
-    const userId = request.identify._id;
+    // // Lấy danh sách người dùng mà người dùng hiện tại đang theo dõi
+    const userFollowedByCurrentUser = await getUserById(userId)
+      .select("following")
+      .lean();
+    // const following = userFollowedByCurrentUser.following;
 
-    // Lấy danh sách người dùng mà người dùng hiện tại đang theo dõi
-    const userFollowedByCurrentUser = await getUserById(userId).select(
-      "following"
-    );
-    const following = userFollowedByCurrentUser.following;
+    // // Lấy danh sách user mà bạn của currentUser đang theo dõi nhưng currentUser không theo dõi
+    // // TODO: What is this?
+    // const friendOfFriends = await User.find({
+    //   _id: { $nin: following.concat(userId) },
+    //   following: { $in: following },
+    // })
+    //   .limit(5);
 
-    // Lấy danh sách user mà bạn của currentUser đang theo dõi nhưng currentUser không theo dõi
-    // TODO: What is this?
-    const friendOfFriends = await User.find({
-      _id: { $nin: following.concat(userId) },
-      following: { $in: following },
-    })
-      .select("-authentication")
-      .limit(5);
+    // Lấy danh sách người dùng, loại trừ người dùng hiện tại và những người đã theo dõi
+    const users = await User.aggregate([
+      {
+        $match: {
+          _id: { $ne: userId, $nin: userFollowedByCurrentUser.following },
+        },
+      },
+      { $sample: { size: 10 } },
+    ]);
 
-    res.status(200).json(friendOfFriends);
+    // Lọc ra 2 người dùng ngẫu nhiên từ danh sách đã lấy
+    const suggestedUsers = users.slice(0, 2);
+
+    // response.status(200).json(friendOfFriends);
+    response.status(200).json(suggestedUsers);
   } catch (error) {
     console.log("Error in getSuggestedUsers", error);
     return response.status(500).json({ error: `Error: ${error}` });
