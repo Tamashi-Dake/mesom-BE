@@ -79,7 +79,7 @@ export const login = async (request, response) => {
     if (!user) {
       return response
         .status(404)
-        .json({ error: true, message: "User does not exist" });
+        .json({ error: true, message: "Login: User does not exist" });
     }
 
     // check if password is correct
@@ -178,7 +178,7 @@ export const getCurrentUser = async (request, response) => {
     if (!currentUser) {
       return response
         .status(400)
-        .json({ error: true, message: "User does not exist" });
+        .json({ error: true, message: "Auth: User does not exist" });
     }
 
     // return current user

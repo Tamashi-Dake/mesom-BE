@@ -428,42 +428,46 @@ export const toggleLikePost = async (request, response) => {
 
     if (!isLiked) {
       post.userLikes.push(userID);
-      await post.save();
-      response.status(200).json({ message: `Post liked` });
 
-      // Check if the post author is the same as the user
-      if (post.author.toString() === userID) {
-        return;
-      }
-
-      // check if notification already exists or the author has blocked the notification type or post
-      if (likeNotification) {
-        // Show the notification if the post is liked
-        await Notification.updateOne(
-          { _id: likeNotification._id },
-          { show: true }
-        );
-      } else if (!request.blockedNotification) {
-        // Create a new notification
-        await Notification.create({
-          from: userID,
-          to: post.author,
-          type: "like",
-          post: postID,
-        });
+      // Chỉ gửi thông báo nếu post.author không phải là người dùng hiện tại
+      if (post.author.toString() !== userID) {
+        if (likeNotification) {
+          // Hiện thông báo nếu đã tồn tại và bài viết được like
+          await Notification.updateOne(
+            { _id: likeNotification._id },
+            { show: true }
+          );
+        } else if (!request.blockedNotification) {
+          // Tạo thông báo mới
+          await Notification.create({
+            from: userID,
+            to: post.author,
+            type: "like",
+            post: postID,
+          });
+        }
       }
     } else {
-      await Post.updateOne({ _id: postID }, { $pull: { userLikes: userID } });
-      response.status(200).json({ message: `Post unliked` });
+      post.userLikes.pull(userID);
 
+      // Ẩn thông báo nếu bài viết bị bỏ like
       if (likeNotification) {
-        // Hide the notification if the post is unliked
         await Notification.updateOne(
           { _id: likeNotification._id },
           { show: false }
         );
       }
     }
+
+    // Luôn lưu post bất kể có gửi thông báo hay không
+    await post.save();
+
+    const updatedLikes = post.userLikes;
+
+    return response.status(200).json({
+      message: !isLiked ? `Post liked` : `Post unliked`,
+      likes: updatedLikes,
+    });
   } catch (error) {
     console.log(error);
     return response.status(400).json({ error: `Error: ${error}` });
@@ -487,44 +491,49 @@ export const toggleSharePost = async (request, response) => {
       post: postID,
     });
 
-    if (!isShared) {
-      post.userShared.push(userID);
-      await post.save();
-      response.status(200).json({ message: `Post shared` });
+    // Check if the post author is the same as the user
+    if (post.author.toString() === userID) {
+      if (!isShared) {
+        post.userShared.push(userID);
 
-      // Check if the post author is the same as the user
-      if (post.author.toString() === userID) {
-        return;
-      }
-
-      // check if notification already exists or the author has blocked the notification type or post
-      if (shareNotification) {
-        await Notification.updateOne(
-          { _id: shareNotification._id },
-          { show: true }
-        );
-      } else {
-        if (request.blockedNotification) {
-          console.log("User currently blocking notification.");
+        // check if notification already exists or the author has blocked the notification type or post
+        if (shareNotification) {
+          await Notification.updateOne(
+            { _id: shareNotification._id },
+            { show: true }
+          );
         } else {
-          await Notification.create({
-            from: userID,
-            to: post.author,
-            type: "share",
-            post: postID,
-          });
+          if (request.blockedNotification) {
+            console.log("User currently blocking notification.");
+          } else {
+            await Notification.create({
+              from: userID,
+              to: post.author,
+              type: "share",
+              post: postID,
+            });
+          }
+        }
+      } else {
+        post.userShared.pull(userID);
+
+        if (shareNotification) {
+          await Notification.updateOne(
+            { _id: shareNotification._id },
+            { show: false }
+          );
         }
       }
-    } else {
-      await Post.updateOne({ _id: postID }, { $pull: { userShared: userID } });
-      response.status(200).json({ message: `Post unshared` });
-      if (shareNotification) {
-        await Notification.updateOne(
-          { _id: shareNotification._id },
-          { show: false }
-        );
-      }
     }
+
+    await post.save();
+    // TODO: change userShared -> userShares
+    const updatedShares = post.userShared;
+
+    return response.status(200).json({
+      message: !isShared ? `Post shared` : `Post unshared`,
+      shares: updatedShares,
+    });
   } catch (error) {
     console.log(error);
     return response.status(400).json({ error: `Error: ${error}` });

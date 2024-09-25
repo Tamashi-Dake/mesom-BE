@@ -21,7 +21,7 @@ export const isAuthenticated = async (request, response, next) => {
     if (!user) {
       return response
         .status(400)
-        .json({ error: true, message: "User does not exist" });
+        .json({ error: true, message: "Session token does not exist" });
     }
 
     // merge user to request
@@ -85,7 +85,7 @@ export const checkUserStatus = async (request, response, next) => {
     if (!user) {
       return response
         .status(400)
-        .json({ error: true, message: "User does not exist" });
+        .json({ error: true, message: "UserID: User does not exist" });
     }
 
     // continue to next middleware

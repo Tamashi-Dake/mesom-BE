@@ -21,6 +21,7 @@ import {
 
 import upload from "../config/uploadConfig.js";
 
+// TODO: Sửa lại cho dễ đoc
 export default (router) => {
   // Have to define the fixed routes first, because mongoose will mistake the fixed routes as dynamic routes
   // Post for pages route
@@ -65,21 +66,21 @@ export default (router) => {
 
   // interaction routes
   router.post(
-    "/posts/like/:id",
+    "/posts/:id/like",
     isAuthenticated,
     checkPostStatus,
     checkUserNotificationSettings,
     toggleLikePost
   );
   router.post(
-    "/posts/share/:id",
+    "/posts/:id/share",
     isAuthenticated,
     checkPostStatus,
     checkUserNotificationSettings,
     toggleSharePost
   );
   router.post(
-    "/posts/incresase-view/:id",
+    "/posts/:id/incresase-view",
     isAuthenticated,
     checkPostStatus,
     increasePostView
