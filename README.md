@@ -16,6 +16,7 @@
   - [x] Change password
   - [ ] Change email
   - [ ] Delete account (might use soft delete)
+
     - [ ] delete user settings
     - [ ] casade delete related posts
     - [ ] casade delete related notifications
@@ -68,9 +69,11 @@
   - [x] Read all posts (pagination)
   - [x] Read replies of post
   - [ ] Update post (only for Premium users)
-  - [ ] Delete post
+  - [ ] Delete post - OR - set Post as Deleted -> just need to filter in get Posts
     - [ ] casade delete replies
-    - [ ] remove related notifications,
+    - [ ] remove related notifications
+    - [ ] blockedPost in user Setting
+    - [ ] user Bookmark
     - [ ] update related documents
   - [x] Like post
   - [x] Share post
@@ -79,6 +82,10 @@
 
 - [ ] Limit api request (express-rate-limit)
 - [ ] Add cron job to clean up notifications (item is hiden or deleted)
+
+- [ ] Admin account
+  - [ ] check deleted Post (only Admin can see deleted Post)
+  - [ ] Delete any Post
 
 #### Models
 

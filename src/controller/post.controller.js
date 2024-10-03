@@ -10,10 +10,7 @@ import View from "../db/view.model.js";
 // => react-query don't have to refetch all data
 
 export const createPost = async (req, res) => {
-  const {
-    text,
-    // , images = []
-  } = req.body;
+  const { text } = req.body;
   const files = req.files;
   const userID = req.identify._id.toString();
 
@@ -31,18 +28,6 @@ export const createPost = async (req, res) => {
         .status(400)
         .json({ error: "You can upload a maximum of 4 images" });
     }
-
-    // Tải lên hình ảnh nếu có
-    // const imageSecureURLs =
-    //   images.length > 0
-    //     ? await Promise.all(
-    //         images.map((image) =>
-    //           cloudinary.uploader
-    //             .upload(image, { folder: "PostImage" })
-    //             .then((uploadResponse) => uploadResponse.secure_url)
-    //         )
-    //       )
-    //     : [];
     const imageSecureURLs =
       files.length > 0
         ? await Promise.all(
@@ -76,44 +61,56 @@ export const createPost = async (req, res) => {
   }
 };
 
-// TODO: Làm như trên
+// TODO: return userReplies để update UI
 export const createReplyPost = async (req, res) => {
   const { id: parentPostID } = req.params;
-  const { text, images = [] } = req.body;
+  const { text } = req.body;
+  const files = req.files;
   const userID = req.identify._id.toString();
+
+  // console.log(text);
+  // console.log(files?.length);
 
   try {
     // Kiểm tra xem bài đăng có văn bản hoặc hình ảnh không
-    if (!text && images.length === 0) {
+    if (!text && files?.length === 0) {
       return res
         .status(400)
         .json({ error: "Please provide text or image in the reply post" });
     }
 
     // Kiểm tra số lượng hình ảnh
-    if (images.length > 4) {
+    if (files?.length > 4) {
       return res
         .status(400)
         .json({ error: "You can upload a maximum of 4 images" });
     }
-
-    // Tải lên hình ảnh nếu có
-    const imageSecureURLs =
-      images.length > 0
-        ? await Promise.all(
-            images.map((image) =>
-              cloudinary.uploader
-                .upload(image, { folder: "PostImage" })
-                .then((uploadResponse) => uploadResponse.secure_url)
-            )
-          )
-        : [];
 
     // Kiểm tra bài đăng gốc
     const parentPost = await Post.findById(parentPostID);
     if (!parentPost) {
       return res.status(404).json({ error: "Parent post doesn't exist" });
     }
+
+    // Tải lên hình ảnh nếu có
+    const imageSecureURLs =
+      files?.length > 0
+        ? await Promise.all(
+            files.map(
+              (file) =>
+                new Promise((resolve, reject) => {
+                  const uploadStream = cloudinary.uploader.upload_stream(
+                    { folder: "Mesom/PostImage" },
+                    (error, result) => {
+                      if (error) return reject(error);
+                      resolve(result.secure_url);
+                    }
+                  );
+                  streamifier.createReadStream(file.buffer).pipe(uploadStream);
+                })
+            )
+          )
+        : [];
 
     // Tạo bài trả lời
     const replyPost = await Post.create({
@@ -123,16 +120,14 @@ export const createReplyPost = async (req, res) => {
       parentPostID,
     });
 
-    // TODO: Cập nhật số lượng phản hồi trong bài đăng gốc
-    await Post.updateOne({ _id: parentPostID }, { $inc: { userReplies: 1 } });
+    const updatedPost = await Post.findOneAndUpdate(
+      { _id: parentPostID },
+      { $inc: { userReplies: 1 } },
+      { new: true } // Trả về document đã được cập nhật
+    );
 
-    // Kiểm tra xem người dùng có phải là tác giả của bài gốc không
-    if (parentPost.author.toString() === userID) {
-      return res.status(201).json(replyPost);
-    }
-
-    // Kiểm tra xem người dùng có chặn thông báo không
-    if (!req.blockedNotification) {
+    // Nếu không phải tác giả của bài gốc và người dùng không chặn thông báo
+    if (parentPost.author.toString() !== userID && !req.blockedNotification) {
       // Tạo thông báo mới
       await Notification.create({
         from: userID,
@@ -142,7 +137,10 @@ export const createReplyPost = async (req, res) => {
       });
     }
 
-    return res.status(201).json(replyPost);
+    return res.status(201).json({
+      replyPost,
+      numberReplies: updatedPost.userReplies,
+    });
   } catch (error) {
     console.error(error);
     return res.status(500).json({ error: `Lỗi: ${error.message || error}` });
@@ -323,7 +321,10 @@ export const getPost = async (request, response) => {
   const { id } = request.params;
 
   try {
-    const post = await Post.findById(id);
+    const post = await Post.findById(id).populate({
+      path: "author",
+      select: " displayName username profile.avatar",
+    });
     return response.status(200).json(post);
   } catch (error) {
     console.log(error);
@@ -352,7 +353,7 @@ export const getRepliesForPost = async (request, response) => {
     }
 
     return response.status(200).json({
-      replies,
+      posts: replies,
       totalReplies,
       limit: parseInt(limit),
       skip: parseInt(skip),
@@ -399,8 +400,21 @@ export const deletePost = async (request, response) => {
       }
     }
 
-    // Delete the post
-    await post.deleteOne();
+    if (post.parentPostID) {
+      const updatedPost = await Post.findOneAndUpdate(
+        { _id: post.parentPostID },
+        { $inc: { userReplies: -1 } },
+        { new: true } // Trả về document đã được cập nhật
+      );
+
+      // Delete the post
+      await post.deleteOne();
+
+      return response.status(200).json({
+        message: "Reply deleted successfully",
+        numberReplies: updatedPost.userReplies,
+      });
+    }
     return response.status(200).json({ message: "Post deleted successfully" });
   } catch (error) {
     console.log(error);
@@ -502,17 +516,13 @@ export const toggleSharePost = async (request, response) => {
             { _id: shareNotification._id },
             { show: true }
           );
-        } else {
-          if (request.blockedNotification) {
-            console.log("User currently blocking notification.");
-          } else {
-            await Notification.create({
-              from: userID,
-              to: post.author,
-              type: "share",
-              post: postID,
-            });
-          }
+        } else if (!request.blockedNotification) {
+          await Notification.create({
+            from: userID,
+            to: post.author,
+            type: "share",
+            post: postID,
+          });
         }
       } else {
         post.userShared.pull(userID);

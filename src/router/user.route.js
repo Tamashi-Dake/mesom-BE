@@ -14,10 +14,10 @@ import {
 } from "../middlewares/index.js";
 
 export default (router) => {
-  // users routes
-  router.get("/users/:username", isAuthenticated, getUserFromUsername);
-  router.patch("/users/:id", isAuthenticated, isOwner, updateUser);
-  router.delete("/users/:id", isAuthenticated, isOwner, deleteUser);
+  // user routes
+  router.get("/user/:username", isAuthenticated, getUserFromUsername);
+  router.patch("/user/:id", isAuthenticated, isOwner, updateUser);
+  router.delete("/user/:id", isAuthenticated, isOwner, deleteUser);
 
   // TODO: move to auth route
   // update password
