@@ -46,11 +46,11 @@ const UserSchema = new mongoose.Schema(
       location: {
         type: String,
       },
-      avatar: {
+      avatarImg: {
         type: String,
         default: "",
       },
-      banner: {
+      coverImg: {
         type: String,
         default: "",
       },

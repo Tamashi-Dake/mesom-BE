@@ -77,23 +77,23 @@ export const updateUser = async (request, response) => {
     if (profile) {
       if (profile.dob) user.profile.dob = profile.dob;
       if (profile.location) user.profile.location = profile.location;
-      if (profile.avatar) {
+      if (profile.avatarImg) {
         const uploadResponse = await cloudinary.uploader.upload(
-          profile.avatar,
+          profile.avatarImg,
           {
             folder: "AvatarImage",
           }
         );
-        user.profile.avatar = uploadResponse.secure_url;
+        user.profile.avatarImg = uploadResponse.secure_url;
       }
-      if (profile.banner) {
+      if (profile.coverImg) {
         const uploadResponse = await cloudinary.uploader.upload(
-          profile.banner,
+          profile.coverImg,
           {
             folder: "CoverImage",
           }
         );
-        user.profile.banner = uploadResponse.secure_url;
+        user.profile.coverImg = uploadResponse.secure_url;
       }
       if (profile.bio) user.profile.bio = profile.bio;
     }

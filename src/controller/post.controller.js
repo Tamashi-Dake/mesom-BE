@@ -61,7 +61,6 @@ export const createPost = async (req, res) => {
   }
 };
 
-// TODO: return userReplies để update UI
 export const createReplyPost = async (req, res) => {
   const { id: parentPostID } = req.params;
   const { text } = req.body;
@@ -158,7 +157,7 @@ export const getAllPosts = async (request, response) => {
       .limit(parseInt(limit))
       .populate({
         path: "author",
-        select: " displayName username profile.avatar",
+        select: " displayName username profile.avatarImg",
       });
 
     // get total number of posts
@@ -201,7 +200,7 @@ export const getPostsByFollowing = async (request, response) => {
       .skip(skip)
       .populate({
         path: "author",
-        select: " displayName username profile.avatar",
+        select: " displayName username profile.avatarImg",
       });
     if (!posts) {
       return response
@@ -253,7 +252,7 @@ export const getPostsByUser = async (request, response) => {
       .limit(parseInt(limit))
       .populate({
         path: "author",
-        select: "displayName username profile.avatar",
+        select: "displayName username profile.avatarImg",
       });
     if (!posts) {
       return response.status(404).json({ message: "No posts found" });
@@ -293,7 +292,7 @@ export const getLikedPostsByUser = async (request, response) => {
       .limit(parseInt(limit))
       .populate({
         path: "author",
-        select: " displayName username profile.avatar",
+        select: " displayName username profile.avatarImg",
       });
     if (!posts) {
       return response
@@ -323,7 +322,7 @@ export const getPost = async (request, response) => {
   try {
     const post = await Post.findById(id).populate({
       path: "author",
-      select: " displayName username profile.avatar",
+      select: " displayName username profile.avatarImg",
     });
     return response.status(200).json(post);
   } catch (error) {
@@ -346,7 +345,7 @@ export const getRepliesForPost = async (request, response) => {
       .limit(parseInt(limit))
       .populate({
         path: "author",
-        select: "displayName username profile.avatar",
+        select: "displayName username profile.avatarImg",
       });
     if (!replies) {
       response.status(404).json({ message: "No replies found" });

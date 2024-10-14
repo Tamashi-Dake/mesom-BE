@@ -20,7 +20,7 @@ export const getUserNotifications = async (request, response) => {
       })
       .limit(limit)
       .skip(skip)
-      .populate("from", "displayName username profile.avatar");
+      .populate("from", "displayName username profile.avatarImg");
     if (!notifications || notifications.length === 0) {
       return response
         .status(404)
