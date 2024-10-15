@@ -27,7 +27,13 @@ export default (router) => {
   router.get("/posts/following", isAuthenticated, getPostsByFollowing);
 
   // post routes
-  router.get("/post/:id", isAuthenticated, checkPostStatus, getPost);
+  router.get(
+    "/post/:id",
+    isAuthenticated,
+    // validateId,
+    checkPostStatus,
+    getPost
+  );
   router.post("/post", isAuthenticated, upload.array("images", 4), createPost);
   // router.patch("/post/:id", isAuthenticated,  updatePost);
   router.delete("/post/:id", isAuthenticated, checkPostStatus, deletePost);
@@ -87,3 +93,15 @@ export default (router) => {
     increasePostView
   );
 };
+
+// export const validateId = (req, res, next) => {
+//   const { id } = req.params;
+
+//   // Kiểm tra nếu id không hợp lệ
+//   if (!id || typeof id !== "string" || id.length !== 24) {
+//     console.log("error here");
+//     return res.status(400).json({ error: true, message: "Invalid Post ID" });
+//   }
+
+//   next();
+// };

@@ -62,9 +62,7 @@ export const checkPostStatus = async (request, response, next) => {
     return next();
   } catch (error) {
     console.log(error);
-    return response
-      .status(400)
-      .json({ error: true, message: `Error: ${error}` });
+    return response.status(400).json({ error: `Error: ${error}` });
   }
 };
 

@@ -391,29 +391,30 @@ export const deletePost = async (request, response) => {
     }
 
     // check if the post has images
-    if (post.images && post.images.length > 0) {
-      // Delete images from cloudinary
-      for (let i = 0; i < post.images.length; i++) {
-        const publicImageID = post.images[i].split("/").pop().split(".")[0];
-        await cloudinary.uploader.destroy(`Mesom/PostImage/${publicImageID}`);
-      }
-    }
+    // if (post.images && post.images.length > 0) {
+    //   // Delete images from cloudinary
+    //   for (let i = 0; i < post.images.length; i++) {
+    //     const publicImageID = post.images[i].split("/").pop().split(".")[0];
+    //     await cloudinary.uploader.destroy(`Mesom/PostImage/${publicImageID}`);
+    //   }
+    // }
 
-    if (post.parentPostID) {
-      const updatedPost = await Post.findOneAndUpdate(
-        { _id: post.parentPostID },
-        { $inc: { userReplies: -1 } },
-        { new: true } // Trả về document đã được cập nhật
-      );
+    // if (post.parentPostID) {
+    //   const updatedPost = await Post.findOneAndUpdate(
+    //     { _id: post.parentPostID },
+    //     { $inc: { userReplies: -1 } },
+    //     { new: true } // Trả về document đã được cập nhật
+    //   );
 
-      // Delete the post
-      await post.deleteOne();
+    // Delete the post
+    // await post.deleteOne();
 
-      return response.status(200).json({
-        message: "Reply deleted successfully",
-        numberReplies: updatedPost.userReplies,
-      });
-    }
+    //   return response.status(200).json({
+    //     message: "Reply deleted successfully",
+    //     // numberReplies: updatedPost.userReplies,
+    //   });
+    // }
+    console.log("change to soft delete");
     return response.status(200).json({ message: "Post deleted successfully" });
   } catch (error) {
     console.log(error);
