@@ -275,7 +275,7 @@ export const getPostsByUser = async (request, response) => {
 };
 
 export const getLikedPostsByUser = async (request, response) => {
-  const { userId } = request.params;
+  const userId = request.params.id;
   const { limit = 30, skip = 0 } = request.query;
   try {
     // check if the user exists
@@ -506,7 +506,7 @@ export const toggleSharePost = async (request, response) => {
     });
 
     // Check if the post author is the same as the user
-    if (post.author.toString() === userID) {
+    if (post.author.toString() !== userID) {
       if (!isShared) {
         post.userShared.push(userID);
 

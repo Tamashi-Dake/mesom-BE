@@ -110,5 +110,5 @@
 #### More
 
 - [ ] User page (Tabs: Posts (Post and Shared Post), Replies (also include Posts), Media(Post with Image), Likes(Liked Posts))
-- [ ] Search (Users, Posts, Tags)
+- [ ] Search (Users, Tags)
 - [ ] Auto taggings images (with Cloudinary)

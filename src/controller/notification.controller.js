@@ -44,6 +44,52 @@ export const getUserNotifications = async (request, response) => {
   }
 };
 
+export const getUserMentions = async (request, response) => {
+  const userId = request.identify._id.toString();
+  const { limit = 50, skip = 0 } = request.query;
+  try {
+    // count all notifications sent to the user
+    const totalNotifications = await Notification.countDocuments({
+      to: userId,
+      type: "reply",
+    });
+
+    // get all mentions sent to the user that are not deleted and are set to show
+    const notifications = await Notification.find({
+      to: userId,
+      type: "reply",
+      deleted: false,
+      show: true,
+    })
+      .sort({
+        createdAt: -1,
+      })
+      .limit(limit)
+      .skip(skip)
+      .populate("from", "displayName username profile.avatarImg");
+    if (!notifications || notifications.length === 0) {
+      return response
+        .status(404)
+        .json({ error: `No notifications found for user ${userId}` });
+    }
+    return response.status(200).json({
+      notifications,
+      totalNotifications,
+      limit,
+      skip,
+      numberOfNotificationsFetched: Math.min(
+        parseInt(skip) + parseInt(limit),
+        totalNotifications
+      ),
+    });
+  } catch (error) {
+    console.log(error);
+    return response
+      .status(400)
+      .json({ error: `Error getting notifications for user ${userId}` });
+  }
+};
+
 export const toggleReadNotification = async (request, response) => {
   const userId = request.identify._id.toString();
   const notificationId = request.params.id;

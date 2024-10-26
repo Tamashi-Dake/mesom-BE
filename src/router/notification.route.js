@@ -1,6 +1,7 @@
 import {
   deleteAllNotifications,
   deleteNotification,
+  getUserMentions,
   getUserNotifications,
   markAllNotificationsAsRead,
   toggleReadNotification,
@@ -10,6 +11,7 @@ import { isAuthenticated } from "../middlewares/index.js";
 export default (router) => {
   // get all notifications
   router.get("/notifications", isAuthenticated, getUserNotifications);
+  router.get("/notifications/mentions", isAuthenticated, getUserMentions);
 
   // mark notification as read / unread
   router.patch("/notifications/:id", isAuthenticated, toggleReadNotification);

@@ -39,7 +39,6 @@ export default (router) => {
   router.delete("/post/:id", isAuthenticated, checkPostStatus, deletePost);
 
   // reply routes
-  // TODO: move post id before the replies
   router.get(
     "/post/:id/replies",
     isAuthenticated,
@@ -49,7 +48,6 @@ export default (router) => {
   router.post(
     "/post/:id",
     isAuthenticated,
-    // dùng multer trước khi động vào FormData
     upload.array("images", 4),
     checkPostStatus,
     // chọc vào Formdata nên PHẢI dùng sau multer
@@ -59,11 +57,14 @@ export default (router) => {
 
   // Post by user routes
   router.get(
-    "/users/:id/posts",
+    "/user/:id/posts",
     isAuthenticated,
     checkUserStatus,
     getPostsByUser
   );
+
+  // TODO: Add Reply, Media
+
   router.get(
     "/user/:id/likes",
     isAuthenticated,
