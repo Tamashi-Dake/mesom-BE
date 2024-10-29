@@ -29,7 +29,10 @@ cloudinary.config({
 // Middleware CORS
 app.use(
   cors({
-    origin: "http://localhost:5173",
+    origin:
+      process.env.NODE_ENV === "production"
+        ? process.env.PROD_URL
+        : "http://localhost:5173",
     credentials: true,
   })
 );
@@ -46,9 +49,21 @@ app.use(compression());
 // Tạo và khởi động máy chủ HTTP
 const server = http.createServer(app);
 
-server.listen(8080, () => {
-  console.log("Server is running on port 8080");
-  connectMongoDB();
-});
+if (process.env.NODE_ENV === "production") {
+  // onRender tự sinh PORT
+  server.listen(process.env.PORT || process.env.PROD_PORT, () => {
+    console.log(
+      `Server running at production port ${
+        process.env.PORT || process.env.PROD_PORT
+      }`
+    );
+    connectMongoDB();
+  });
+} else {
+  server.listen(process.env.DEV_PORT, () => {
+    console.log(`Server running at port ${process.env.DEV_PORT}`);
+    connectMongoDB();
+  });
+}
 
 app.use("/", router());

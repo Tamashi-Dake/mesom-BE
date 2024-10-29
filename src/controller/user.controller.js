@@ -9,6 +9,7 @@ import {
 import Notification from "../db/notification.model.js";
 
 import { authentication, random } from "../util/authenticationCrypto.js";
+import streamUpload from "../util/streamUpload.js";
 
 // export const getAllUsers = async (request, response) => {
 //   try {
@@ -51,51 +52,80 @@ export const deleteUser = async (request, response) => {
   }
 };
 
+// TODO: Allow update username ONCE
+// get update info from request body
+// if (!username) {
+//   return response.status(400).json({
+//     error: true,
+//     message: "Username is required",
+//   });
+// }
+
+// user.username = username;
+//  username,
 export const updateUser = async (request, response) => {
   const { id } = request.params;
-  let {
-    //  username,
-    displayName,
-    profile,
-  } = request.body;
+  const { displayName, bio, location, website } = request.body;
+  const files = request.files;
   try {
     const user = await getUserById(id);
     if (!user) {
       return response.status(404).json({ error: "User not found" });
     }
 
-    // get update info from request body
-    // if (!username) {
-    //   return response.status(400).json({
-    //     error: true,
-    //     message: "Username is required",
-    //   });
+    // user.profile.dob = profile.dob || user.profile.dob;
+    user.displayName = displayName || user.displayName;
+    user.profile.bio = bio || user.profile.bio;
+    user.profile.location = location || user.profile.location;
+    user.profile.website = website || user.profile.website;
+
+    if (files.avatarImg && files.avatarImg.length > 0) {
+      if (user.profile.avatarImg) {
+        console.log(user.profile.avatarImg.split("/").pop().split(".")[0]);
+        await cloudinary.uploader.destroy(
+          `Mesom/AvatarImage/${
+            user.profile.avatarImg.split("/").pop().split(".")[0]
+          }`
+        );
+      }
+      const avatarResult = await streamUpload(
+        files.avatarImg[0].buffer,
+        "Mesom/AvatarImage"
+      );
+      user.profile.avatarImg = avatarResult.secure_url;
+    }
+
+    // const uploadResponse = await cloudinary.uploader.upload(
+    //   files.avatarImg[0].buffer,
+    //   {
+    //     folder: "Mesom/AvatarImage",
+    //   }
+    // );
+    // user.profile.avatarImg = uploadResponse.secure_url;
     // }
 
-    // user.username = username;
-    user.displayName = displayName;
-    if (profile) {
-      if (profile.dob) user.profile.dob = profile.dob;
-      if (profile.location) user.profile.location = profile.location;
-      if (profile.avatarImg) {
-        const uploadResponse = await cloudinary.uploader.upload(
-          profile.avatarImg,
-          {
-            folder: "AvatarImage",
-          }
+    if (files.coverImg && files.coverImg.length > 0) {
+      if (user.profile.coverImg) {
+        await cloudinary.uploader.destroy(
+          `Mesom/CoverImage/${
+            user.profile.coverImg.split("/").pop().split(".")[0]
+          }`
         );
-        user.profile.avatarImg = uploadResponse.secure_url;
       }
-      if (profile.coverImg) {
-        const uploadResponse = await cloudinary.uploader.upload(
-          profile.coverImg,
-          {
-            folder: "CoverImage",
-          }
-        );
-        user.profile.coverImg = uploadResponse.secure_url;
-      }
-      if (profile.bio) user.profile.bio = profile.bio;
+
+      const coverResult = await streamUpload(
+        files.coverImg[0].buffer,
+        "Mesom/CoverImage"
+      );
+      user.profile.coverImg = coverResult.secure_url;
+
+      // const uploadResponse = await cloudinary.uploader.upload(
+      //   files.coverImg[0].buffer,
+      //   {
+      //     folder: "Mesom/CoverImage",
+      //   }
+      // );
+      // user.profile.coverImg = uploadResponse.secure_url;
     }
 
     await user.save();

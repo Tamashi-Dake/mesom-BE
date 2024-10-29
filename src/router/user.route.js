@@ -13,10 +13,18 @@ import {
   isOwner,
 } from "../middlewares/index.js";
 
+import upload from "../config/uploadConfig.js";
+
 export default (router) => {
   // user routes
   router.get("/user/:username", isAuthenticated, getUserFromUsername);
-  router.patch("/user/:id", isAuthenticated, isOwner, updateUser);
+  router.patch(
+    "/user/:id",
+    isAuthenticated,
+    upload.fields([{ name: "avatarImg" }, { name: "coverImg" }]),
+    isOwner,
+    updateUser
+  );
   router.delete("/user/:id", isAuthenticated, isOwner, deleteUser);
 
   // TODO: move to auth route
