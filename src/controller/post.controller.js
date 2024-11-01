@@ -505,18 +505,20 @@ export const toggleSharePost = async (request, response) => {
       post: postID,
     });
 
-    // Check if the post author is the same as the user
-    if (post.author.toString() !== userID) {
-      if (!isShared) {
-        post.userShared.push(userID);
+    // Kiểm tra xem bài viết đã được chia sẻ hay chưa
+    if (!isShared) {
+      post.userShared.push(userID);
 
-        // check if notification already exists or the author has blocked the notification type or post
+      // Chỉ gửi thông báo nếu tác giả không phải là người dùng hiện tại
+      if (post.author.toString() !== userID) {
         if (shareNotification) {
+          // Hiện thông báo nếu đã tồn tại và bài viết được chia sẻ
           await Notification.updateOne(
             { _id: shareNotification._id },
             { show: true }
           );
         } else if (!request.blockedNotification) {
+          // Tạo thông báo mới
           await Notification.create({
             from: userID,
             to: post.author,
@@ -524,19 +526,22 @@ export const toggleSharePost = async (request, response) => {
             post: postID,
           });
         }
-      } else {
-        post.userShared.pull(userID);
+      }
+    } else {
+      post.userShared.pull(userID);
 
-        if (shareNotification) {
-          await Notification.updateOne(
-            { _id: shareNotification._id },
-            { show: false }
-          );
-        }
+      // Ẩn thông báo nếu bài viết bị bỏ chia sẻ
+      if (shareNotification) {
+        await Notification.updateOne(
+          { _id: shareNotification._id },
+          { show: false }
+        );
       }
     }
 
+    // Luôn lưu bài viết bất kể có gửi thông báo hay không
     await post.save();
+
     // TODO: change userShared -> userShares
     const updatedShares = post.userShared;
 
