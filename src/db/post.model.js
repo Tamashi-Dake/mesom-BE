@@ -8,14 +8,20 @@ const postSchema = new mongoose.Schema(
       required: true,
     },
     text: { type: String },
-    // images can be an array of strings
     images: [{ type: String }],
-    parentPostID: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Post",
+    parent: {
+      parentPostID: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Post",
+      },
+      // TODO: Khi update Username/ display name cần update thêm ở đây
+      authorName: {
+        type: String,
+      },
     },
     userLikes: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
     userShared: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
+    userBookmark: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
     userReplies: { type: Number },
     tags: [
       {

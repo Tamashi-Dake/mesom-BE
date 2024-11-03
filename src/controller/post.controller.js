@@ -63,7 +63,7 @@ export const createPost = async (req, res) => {
 
 export const createReplyPost = async (req, res) => {
   const { id: parentPostID } = req.params;
-  const { text } = req.body;
+  const { text, authorName } = req.body;
   const files = req.files;
   const userID = req.identify._id.toString();
 
@@ -116,7 +116,10 @@ export const createReplyPost = async (req, res) => {
       author: userID,
       text,
       images: imageSecureURLs,
-      parentPostID,
+      parent: {
+        parentPostID: parentPostID,
+        authorName: authorName,
+      },
     });
 
     const updatedPost = await Post.findOneAndUpdate(
@@ -150,8 +153,8 @@ export const getAllPosts = async (request, response) => {
   // set the limit of posts per request
   const { limit = 30, skip = 0 } = request.query;
   try {
-    // get all posts
-    const posts = await Post.find({ parentPostID: { $exists: false } })
+    // get all posts without parent
+    const posts = await Post.find({ parent: { $exists: false } })
       .sort({ createdAt: -1 })
       .skip(parseInt(skip))
       .limit(parseInt(limit))
@@ -162,7 +165,7 @@ export const getAllPosts = async (request, response) => {
 
     // get total number of posts
     const totalPosts = await Post.countDocuments({
-      parentPostID: { $exists: false },
+      parent: { $exists: false },
     });
 
     return response.status(200).json({
@@ -193,7 +196,7 @@ export const getPostsByFollowing = async (request, response) => {
     // get posts from user in following
     const posts = await Post.find({
       author: { $in: following },
-      parentPostID: { $exists: false },
+      parent: { $exists: false },
     })
       .sort({ createdAt: -1 })
       .limit(limit)
@@ -211,7 +214,7 @@ export const getPostsByFollowing = async (request, response) => {
     // get total number of posts
     const totalPosts = await Post.countDocuments({
       author: { $in: following },
-      parentPostID: { $exists: false },
+      parent: { $exists: false },
     });
 
     return response.status(200).json({
@@ -236,15 +239,15 @@ export const getPostsByUser = async (request, response) => {
   try {
     // count all posts by the user
     const totalPosts = await Post.countDocuments({
-      parentPostID: { $exists: false },
+      parent: { $exists: false },
       author: userId,
     });
 
     // get all posts by the user and posts with userShared contains the userID
     const posts = await Post.find({
       $or: [
-        { parentPostID: { $exists: false }, author: userId },
-        { parentPostID: { $exists: false }, userShared: userId },
+        { parent: { $exists: false }, author: userId },
+        { parent: { $exists: false }, userShared: userId },
       ],
     })
       .sort({ createdAt: -1 })
@@ -339,7 +342,7 @@ export const getRepliesForPost = async (request, response) => {
     const totalReplies = await Post.countDocuments({ parentPostID });
 
     // get all replies for the post
-    const replies = await Post.find({ parentPostID })
+    const replies = await Post.find({ "parent.parentPostID": parentPostID })
       .sort({ createdAt: -1 })
       .skip(parseInt(skip))
       .limit(parseInt(limit))
