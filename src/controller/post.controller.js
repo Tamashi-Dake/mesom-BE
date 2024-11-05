@@ -135,7 +135,7 @@ export const createReplyPost = async (req, res) => {
         from: userID,
         to: parentPost.author,
         type: "reply",
-        post: parentPostID,
+        post: replyPost._id,
       });
     }
 

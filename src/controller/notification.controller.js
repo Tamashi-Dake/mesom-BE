@@ -22,9 +22,7 @@ export const getUserNotifications = async (request, response) => {
       .skip(skip)
       .populate("from", "displayName username profile.avatarImg");
     if (!notifications || notifications.length === 0) {
-      return response
-        .status(404)
-        .json({ error: `No notifications found for user ${userId}` });
+      return response.status(404).json({ error: `No notifications found` });
     }
     return response.status(200).json({
       notifications,
@@ -38,9 +36,7 @@ export const getUserNotifications = async (request, response) => {
     });
   } catch (error) {
     console.log(error);
-    return response
-      .status(400)
-      .json({ error: `Error getting notifications for user ${userId}` });
+    return response.status(400).json({ error: `Error getting notifications` });
   }
 };
 
@@ -55,7 +51,7 @@ export const getUserMentions = async (request, response) => {
     });
 
     // get all mentions sent to the user that are not deleted and are set to show
-    const notifications = await Notification.find({
+    const mentions = await Notification.find({
       to: userId,
       type: "reply",
       deleted: false,
@@ -66,14 +62,13 @@ export const getUserMentions = async (request, response) => {
       })
       .limit(limit)
       .skip(skip)
-      .populate("from", "displayName username profile.avatarImg");
-    if (!notifications || notifications.length === 0) {
-      return response
-        .status(404)
-        .json({ error: `No notifications found for user ${userId}` });
+      .populate("from", "displayName username profile.avatarImg")
+      .populate("post");
+    if (!mentions || mentions.length === 0) {
+      return response.status(404).json({ error: `No mentions found` });
     }
     return response.status(200).json({
-      notifications,
+      mentions,
       totalNotifications,
       limit,
       skip,
@@ -84,9 +79,7 @@ export const getUserMentions = async (request, response) => {
     });
   } catch (error) {
     console.log(error);
-    return response
-      .status(400)
-      .json({ error: `Error getting notifications for user ${userId}` });
+    return response.status(400).json({ error: `Error getting mentions` });
   }
 };
 
