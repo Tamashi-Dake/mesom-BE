@@ -8,7 +8,9 @@ import {
   getPostsByFollowing,
   getPostsByUser,
   getRepliesForPost,
+  getUserBookmarks,
   increasePostView,
+  toggleBookmarkPost,
   toggleLikePost,
   toggleSharePost,
 } from "../controller/post.controller.js";
@@ -25,6 +27,7 @@ export default (router) => {
   // Post for pages route
   router.get("/posts", isAuthenticated, getAllPosts);
   router.get("/posts/following", isAuthenticated, getPostsByFollowing);
+  router.get("/posts/bookmarks", isAuthenticated, getUserBookmarks);
 
   // post routes
   router.get(
@@ -86,6 +89,12 @@ export default (router) => {
     checkPostStatus,
     checkUserNotificationSettings,
     toggleSharePost
+  );
+  router.post(
+    "/post/:id/bookmark",
+    isAuthenticated,
+    checkPostStatus,
+    toggleBookmarkPost
   );
   router.post(
     "/post/:id/increase-view",

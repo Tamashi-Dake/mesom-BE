@@ -77,6 +77,7 @@
     - [ ] update related documents
   - [x] Like post
   - [x] Share post
+  - [x] Bookmark post
   - [x] View post
   - [ ] Tags
 

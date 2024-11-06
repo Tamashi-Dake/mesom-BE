@@ -39,6 +39,12 @@ const UserSchema = new mongoose.Schema(
         ref: "User",
       },
     ],
+    bookmarks: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Post",
+      },
+    ],
     profile: {
       dob: {
         type: Date,
@@ -66,9 +72,9 @@ const UserSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
-    pinnedTweet: {
+    pinnedPost: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "Tweet",
+      ref: "Post",
     },
     status: {
       type: String,

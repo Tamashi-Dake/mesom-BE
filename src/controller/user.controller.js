@@ -344,16 +344,30 @@ export const getSuggestedUsers = async (request, response) => {
           _id: { $ne: userId, $nin: userFollowedByCurrentUser.following },
         },
       },
+      {
+        $project: {
+          "authentication.password": 0,
+          "authentication.salt": 0,
+          "authentication.sessionToken": 0,
+        },
+      },
       { $sample: { size: 10 } },
     ]);
 
-    // Lọc ra 2 người dùng ngẫu nhiên từ danh sách đã lấy
-    const suggestedUsers = users.slice(0, 2);
+    const admin = await User.findOne()
+      .sort({ createdAt: 1 })
+      .select(
+        "-authentication.password -authentication.salt -authentication.sessionToken"
+      );
 
-    // response.status(200).json(friendOfFriends);
-    response.status(200).json(suggestedUsers);
+    // Lọc ra 2 người dùng ngẫu nhiên từ danh sách đã lấy
+    const suggestedUsers = users
+      .filter((user) => user._id.toString() !== admin._id.toString()) // Loại bỏ admin nếu có
+      .slice(0, 2);
+
+    response.status(200).json({ admin, suggestedUsers });
   } catch (error) {
-    console.log("Error in getSuggestedUsers", error);
+    console.log("Error fetching suggested users", error);
     return response.status(500).json({ error: `Error: ${error}` });
   }
 };

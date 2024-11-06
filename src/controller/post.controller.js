@@ -319,6 +319,49 @@ export const getLikedPostsByUser = async (request, response) => {
   }
 };
 
+export const getUserBookmarks = async (request, response) => {
+  const userId = request.identify._id.toString();
+  const { limit = 30, skip = 0 } = request.body;
+  try {
+    const user = await User.findById(userId);
+    const bookmarks = user.bookmarks;
+
+    const posts = await Post.find({
+      _id: { $in: bookmarks },
+    })
+      .sort({ createdAt: -1 })
+      .limit(limit)
+      .skip(skip)
+      .populate({
+        path: "author",
+        select: " displayName username profile.avatarImg",
+      });
+    if (!posts) {
+      return response
+        .status(404)
+        .json({ message: "You don't have any bookmarks" });
+    }
+
+    const totalPosts = await Post.countDocuments({
+      _id: { $in: bookmarks },
+    });
+
+    return response.status(200).json({
+      posts,
+      totalPosts,
+      limit: parseInt(limit),
+      skip: parseInt(skip),
+      numberOfPostsFetched: Math.min(
+        parseInt(skip) + parseInt(limit),
+        totalPosts
+      ),
+    });
+  } catch (error) {
+    console.log(error);
+    return response.status(400).json({ error: `Error at ${error}` });
+  }
+};
+
 export const getPost = async (request, response) => {
   const { id } = request.params;
 
@@ -551,6 +594,45 @@ export const toggleSharePost = async (request, response) => {
     return response.status(200).json({
       message: !isShared ? `Post shared` : `Post unshared`,
       shares: updatedShares,
+    });
+  } catch (error) {
+    console.log(error);
+    return response.status(400).json({ error: `Error: ${error}` });
+  }
+};
+
+export const toggleBookmarkPost = async (request, response) => {
+  const { id: postID } = request.params;
+  const userID = request.identify._id.toString();
+  try {
+    // Check if the user / post exists
+    const user = await User.findById(userID);
+    // Check if the user has already shared the post
+    const isBookmarked = user.bookmarks.includes(postID);
+    // Tính toán số lượng thay đổi cho userBookmarks
+    const bookmarkChange = isBookmarked ? -1 : 1;
+
+    // Kiểm tra xem bài viết đã được chia sẻ hay chưa
+    !isBookmarked ? user.bookmarks.push(postID) : user.bookmarks.pull(postID);
+    await user.save();
+
+    // Cập nhật userBookmarks trên bài viết và thông tin bookmarks của user
+    const updatedPost = await Post.findOneAndUpdate(
+      { _id: postID },
+      { $inc: { userBookmarks: bookmarkChange } },
+      { new: true }
+    );
+
+    // Lấy giá trị userBookmarks từ updatedPost
+    const updatedBookmark = updatedPost.userBookmarks;
+
+    // TODO: Add limit for Free user (100, 1000 for Premium)
+
+    return response.status(200).json({
+      message: !isBookmarked
+        ? `Post has been bookmarked`
+        : `Post has been removed from bookmarks`,
+      userBookmarks: updatedBookmark,
     });
   } catch (error) {
     console.log(error);
