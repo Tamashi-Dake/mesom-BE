@@ -5,6 +5,7 @@ import { User } from "../db/user.model.js";
 import Post from "../db/post.model.js";
 import Notification from "../db/notification.model.js";
 import View from "../db/view.model.js";
+import { randomDelay } from "../util/delay.js";
 
 // TODO: refactor interaction functions to return updated value
 // => react-query don't have to refetch all data
@@ -644,6 +645,8 @@ export const increasePostView = async (request, response) => {
   const { id: postID } = request.params;
   const userID = request.identify._id.toString();
   try {
+    //TODO: If increase view is okay in produciton then remove delay
+    await randomDelay(500, 1500);
     // Check if View exists (find by postID and userID)
     const view = await View.findOne({ postID, userID });
     if (!view) {
