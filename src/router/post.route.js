@@ -4,9 +4,11 @@ import {
   deletePost,
   getAllPosts,
   getLikedPostsByUser,
+  getMediasByUser,
   getPost,
   getPostsByFollowing,
   getPostsByUser,
+  getRepliesByUser,
   getRepliesForPost,
   getUserBookmarks,
   increasePostView,
@@ -66,7 +68,19 @@ export default (router) => {
     getPostsByUser
   );
 
-  // TODO: Add Reply, Media
+  router.get(
+    "/user/:id/replies",
+    isAuthenticated,
+    checkUserStatus,
+    getRepliesByUser
+  );
+
+  router.get(
+    "/user/:id/medias",
+    isAuthenticated,
+    checkUserStatus,
+    getMediasByUser
+  );
 
   router.get(
     "/user/:id/likes",

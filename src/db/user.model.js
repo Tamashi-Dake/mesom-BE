@@ -46,6 +46,7 @@ const UserSchema = new mongoose.Schema(
       },
     ],
     profile: {
+      // TODO: Add, update dob
       dob: {
         type: Date,
       },

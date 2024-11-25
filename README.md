@@ -45,8 +45,8 @@
   - [ ] Block / Unblock user
   - [x] View user
   - [x] View Posts of user (user posts, shared posts)
-  - [ ] View Replies of user (user posts, replies)
-  - [ ] View Media of user (user posts with image)
+  - [x] View Replies of user (user posts, replies)
+  - [x] View Medias of user (user posts with image)
   - [x] View Likes of user (liked posts)
 
 - [ ] Settings
@@ -110,6 +110,6 @@
 
 #### More
 
-- [ ] User page (Tabs: Posts (Post and Shared Post), Replies (also include Posts), Media(Post with Image), Likes(Liked Posts))
+- [ ] User page (Tabs: Posts (Post and Shared Post), Replies (also include Posts), Medias(Post with Image), Likes(Liked Posts))
 - [ ] Search (Users, Tags)
 - [ ] Auto taggings images (with Cloudinary)

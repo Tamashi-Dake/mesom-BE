@@ -22,7 +22,7 @@ const postSchema = new mongoose.Schema(
     userLikes: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
     userShared: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
     userBookmarks: { type: Number },
-    userReplies: { type: Number },
+    userReplies: { type: Number, default: 0 },
     tags: [
       {
         type: mongoose.Schema.Types.ObjectId,
@@ -32,6 +32,10 @@ const postSchema = new mongoose.Schema(
     views: {
       type: Number,
       default: 0,
+    },
+    deleted: {
+      type: Boolean,
+      default: false,
     },
   },
   { timestamps: true }

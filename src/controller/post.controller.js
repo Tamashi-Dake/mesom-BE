@@ -152,10 +152,14 @@ export const createReplyPost = async (req, res) => {
 
 export const getAllPosts = async (request, response) => {
   // set the limit of posts per request
-  const { limit = 30, skip = 0 } = request.query;
+  const limit = parseInt(request.query.limit) || 10;
+  const skip = parseInt(request.query.skip);
   try {
     // get all posts without parent
-    const posts = await Post.find({ parent: { $exists: false } })
+    const posts = await Post.find({
+      parent: { $exists: false },
+      deleted: false,
+    })
       .sort({ createdAt: -1 })
       .skip(parseInt(skip))
       .limit(parseInt(limit))
@@ -167,17 +171,17 @@ export const getAllPosts = async (request, response) => {
     // get total number of posts
     const totalPosts = await Post.countDocuments({
       parent: { $exists: false },
+      deleted: false,
     });
+    const remainingPosts = totalPosts - skip - limit;
+    const nextSkip = remainingPosts > 0 ? skip + limit : null;
 
     return response.status(200).json({
       posts,
       totalPosts,
       limit: parseInt(limit),
       skip: parseInt(skip),
-      numberOfPostsFetched: Math.min(
-        parseInt(skip) + parseInt(limit),
-        totalPosts
-      ),
+      nextSkip: nextSkip,
     });
   } catch (error) {
     console.log(error);
@@ -187,7 +191,8 @@ export const getAllPosts = async (request, response) => {
 
 export const getPostsByFollowing = async (request, response) => {
   const userId = request.identify._id.toString();
-  const { limit = 30, skip = 0 } = request.body;
+  const limit = parseInt(request.query.limit) || 10;
+  const skip = parseInt(request.query.skip);
   try {
     // get user
     const user = await User.findById(userId);
@@ -198,6 +203,7 @@ export const getPostsByFollowing = async (request, response) => {
     const posts = await Post.find({
       author: { $in: following },
       parent: { $exists: false },
+      deleted: false,
     })
       .sort({ createdAt: -1 })
       .limit(limit)
@@ -216,17 +222,18 @@ export const getPostsByFollowing = async (request, response) => {
     const totalPosts = await Post.countDocuments({
       author: { $in: following },
       parent: { $exists: false },
+      deleted: false,
     });
+
+    const remainingPosts = totalPosts - skip - limit;
+    const nextSkip = remainingPosts > 0 ? skip + limit : null;
 
     return response.status(200).json({
       posts,
       totalPosts,
       limit: parseInt(limit),
       skip: parseInt(skip),
-      numberOfPostsFetched: Math.min(
-        parseInt(skip) + parseInt(limit),
-        totalPosts
-      ),
+      nextSkip: nextSkip,
     });
   } catch (error) {
     console.log(error);
@@ -236,12 +243,16 @@ export const getPostsByFollowing = async (request, response) => {
 
 export const getPostsByUser = async (request, response) => {
   const userId = request.params.id;
-  const { limit = 30, skip = 0 } = request.query;
+  const limit = parseInt(request.query.limit) || 10;
+  const skip = parseInt(request.query.skip);
   try {
     // count all posts by the user
     const totalPosts = await Post.countDocuments({
-      parent: { $exists: false },
-      author: userId,
+      $or: [
+        { parent: { $exists: false }, author: userId },
+        { parent: { $exists: false }, userShared: userId },
+      ],
+      deleted: false,
     });
 
     // get all posts by the user and posts with userShared contains the userID
@@ -250,6 +261,7 @@ export const getPostsByUser = async (request, response) => {
         { parent: { $exists: false }, author: userId },
         { parent: { $exists: false }, userShared: userId },
       ],
+      deleted: false,
     })
       .sort({ createdAt: -1 })
       .skip(parseInt(skip))
@@ -262,15 +274,103 @@ export const getPostsByUser = async (request, response) => {
       return response.status(404).json({ message: "No posts found" });
     }
 
+    const remainingPosts = totalPosts - skip - limit;
+    const nextSkip = remainingPosts > 0 ? skip + limit : null;
+
     return response.status(200).json({
       posts,
       totalPosts,
       limit: parseInt(limit),
       skip: parseInt(skip),
-      numberOfPostsFetched: Math.min(
-        parseInt(skip) + parseInt(limit),
-        totalPosts
-      ),
+      nextSkip: nextSkip,
+    });
+  } catch (error) {
+    console.log(error);
+    return response.status(400).json({ error: `Error: ${error}` });
+  }
+};
+
+export const getRepliesByUser = async (request, response) => {
+  const userId = request.params.id;
+  const limit = parseInt(request.query.limit) || 10;
+  const skip = parseInt(request.query.skip);
+  try {
+    const totalPosts = await Post.countDocuments({
+      parent: { $exists: true },
+      author: userId,
+      deleted: false,
+    });
+
+    const posts = await Post.find({
+      parent: { $exists: true },
+      author: userId,
+      deleted: false,
+    })
+      .sort({ createdAt: -1 })
+      .skip(parseInt(skip))
+      .limit(parseInt(limit))
+      .populate({
+        path: "author",
+        select: "displayName username profile.avatarImg",
+      });
+    if (!posts) {
+      return response.status(404).json({ message: "No posts found" });
+    }
+
+    const remainingPosts = totalPosts - skip - limit;
+    const nextSkip = remainingPosts > 0 ? skip + limit : null;
+
+    return response.status(200).json({
+      posts,
+      totalPosts,
+      limit: parseInt(limit),
+      skip: parseInt(skip),
+      nextSkip: nextSkip,
+    });
+  } catch (error) {
+    console.log(error);
+    return response.status(400).json({ error: `Error: ${error}` });
+  }
+};
+
+export const getMediasByUser = async (request, response) => {
+  const userId = request.params.id;
+  const limit = parseInt(request.query.limit) || 10;
+  const skip = parseInt(request.query.skip);
+  try {
+    const totalPosts = await Post.countDocuments({
+      parent: { $exists: false },
+      author: userId,
+      deleted: false,
+      images: { $ne: [] },
+    });
+
+    const posts = await Post.find({
+      parent: { $exists: false },
+      author: userId,
+      deleted: false,
+      images: { $ne: [] },
+    })
+      .sort({ createdAt: -1 })
+      .skip(parseInt(skip))
+      .limit(parseInt(limit))
+      .populate({
+        path: "author",
+        select: "displayName username profile.avatarImg",
+      });
+    if (!posts) {
+      return response.status(404).json({ message: "No posts found" });
+    }
+
+    const remainingPosts = totalPosts - skip - limit;
+    const nextSkip = remainingPosts > 0 ? skip + limit : null;
+
+    return response.status(200).json({
+      posts,
+      totalPosts,
+      limit: parseInt(limit),
+      skip: parseInt(skip),
+      nextSkip: nextSkip,
     });
   } catch (error) {
     console.log(error);
@@ -280,17 +380,20 @@ export const getPostsByUser = async (request, response) => {
 
 export const getLikedPostsByUser = async (request, response) => {
   const userId = request.params.id;
-  const { limit = 30, skip = 0 } = request.query;
+  const limit = parseInt(request.query.limit) || 10;
+  const skip = parseInt(request.query.skip);
   try {
     // check if the user exists
     const user = await User.findById(userId);
-    if (!user) return response.status(404).json({ error: "User not found" });
 
     // count all liked posts
-    const totalLikedPosts = await Post.countDocuments({ userLikes: userId });
+    const totalLikedPosts = await Post.countDocuments({
+      userLikes: userId,
+      deleted: false,
+    });
 
     // get all liked posts contains the userID
-    const posts = await Post.find({ userLikes: userId })
+    const posts = await Post.find({ userLikes: userId, deleted: false })
       .sort({ createdAt: -1 })
       .skip(parseInt(skip))
       .limit(parseInt(limit))
@@ -301,18 +404,18 @@ export const getLikedPostsByUser = async (request, response) => {
     if (!posts) {
       return response
         .status(404)
-        .json({ message: "You haven't liked any post" });
+        .json({ message: `@${user.username} haven't liked any post` });
     }
+
+    const remainingPosts = totalLikedPosts - skip - limit;
+    const nextSkip = remainingPosts > 0 ? skip + limit : null;
 
     return response.status(200).json({
       posts,
       totalLikedPosts,
       limit: parseInt(limit),
       skip: parseInt(skip),
-      numberOfPostsFetched: Math.min(
-        parseInt(skip) + parseInt(limit),
-        totalLikedPosts
-      ),
+      nextSkip: nextSkip,
     });
   } catch (error) {
     console.log(error);
@@ -322,13 +425,15 @@ export const getLikedPostsByUser = async (request, response) => {
 
 export const getUserBookmarks = async (request, response) => {
   const userId = request.identify._id.toString();
-  const { limit = 30, skip = 0 } = request.body;
+  const limit = parseInt(request.query.limit) || 10;
+  const skip = parseInt(request.query.skip);
   try {
     const user = await User.findById(userId);
     const bookmarks = user.bookmarks;
 
     const posts = await Post.find({
       _id: { $in: bookmarks },
+      deleted: false,
     })
       .sort({ createdAt: -1 })
       .limit(limit)
@@ -345,17 +450,18 @@ export const getUserBookmarks = async (request, response) => {
 
     const totalPosts = await Post.countDocuments({
       _id: { $in: bookmarks },
+      deleted: false,
     });
+
+    const remainingPosts = totalPosts - skip - limit;
+    const nextSkip = remainingPosts > 0 ? skip + limit : null;
 
     return response.status(200).json({
       posts,
       totalPosts,
       limit: parseInt(limit),
       skip: parseInt(skip),
-      numberOfPostsFetched: Math.min(
-        parseInt(skip) + parseInt(limit),
-        totalPosts
-      ),
+      nextSkip: nextSkip,
     });
   } catch (error) {
     console.log(error);
@@ -371,6 +477,15 @@ export const getPost = async (request, response) => {
       path: "author",
       select: " displayName username profile.avatarImg",
     });
+    if (post.deleted) {
+      return response.status(200).json({
+        _id: post._id,
+        deleted: true,
+        author: {
+          username: post.author.username,
+        },
+      });
+    }
     return response.status(200).json(post);
   } catch (error) {
     console.log(error);
@@ -380,13 +495,20 @@ export const getPost = async (request, response) => {
 
 export const getRepliesForPost = async (request, response) => {
   const { id: parentPostID } = request.params;
-  const { limit = 30, skip = 0 } = request.query;
+  const limit = parseInt(request.query.limit) || 10;
+  const skip = parseInt(request.query.skip);
   try {
     // count all replies for the post
-    const totalReplies = await Post.countDocuments({ parentPostID });
+    const totalReplies = await Post.countDocuments({
+      parentPostID,
+      deleted: false,
+    });
 
     // get all replies for the post
-    const replies = await Post.find({ "parent.parentPostID": parentPostID })
+    const replies = await Post.find({
+      "parent.parentPostID": parentPostID,
+      deleted: false,
+    })
       .sort({ createdAt: -1 })
       .skip(parseInt(skip))
       .limit(parseInt(limit))
@@ -398,15 +520,15 @@ export const getRepliesForPost = async (request, response) => {
       response.status(404).json({ message: "No replies found" });
     }
 
+    const remainingPosts = totalReplies - skip - limit;
+    const nextSkip = remainingPosts > 0 ? skip + limit : null;
+
     return response.status(200).json({
       posts: replies,
       totalReplies,
       limit: parseInt(limit),
       skip: parseInt(skip),
-      numberOfRepliesFetched:
-        totalReplies > limit + parseInt(skip)
-          ? parseInt(skip) + limit
-          : totalReplies,
+      nextSkip: nextSkip,
     });
   } catch (error) {
     console.log(error);
