@@ -41,8 +41,15 @@ const UserSchema = new mongoose.Schema(
     ],
     bookmarks: [
       {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "Post",
+        _id: false,
+        post: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "Post",
+        },
+        bookmarkedAt: {
+          type: Date,
+          default: Date.now,
+        },
       },
     ],
     profile: {

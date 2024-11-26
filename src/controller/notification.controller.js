@@ -2,12 +2,19 @@ import Notification from "../db/notification.model.js";
 
 export const getUserNotifications = async (request, response) => {
   const userId = request.identify._id.toString();
-  const { limit = 50, skip = 0 } = request.query;
+  const limit = parseInt(request.query.limit) || 10;
+  const skip = parseInt(request.query.skip);
   try {
     // count all notifications sent to the user
     const totalNotifications = await Notification.countDocuments({
       to: userId,
+      deleted: false,
+      show: true,
     });
+    if (totalNotifications === 0)
+      return response
+        .status(200)
+        .json({ message: `You don't have any notifications` });
 
     // get all notifications sent to the user that are not deleted and are set to show
     const notifications = await Notification.find({
@@ -24,15 +31,16 @@ export const getUserNotifications = async (request, response) => {
     if (!notifications || notifications.length === 0) {
       return response.status(404).json({ error: `No notifications found` });
     }
+
+    const remainingNotifications = totalNotifications - skip - limit;
+    const nextSkip = remainingNotifications > 0 ? skip + limit : null;
+
     return response.status(200).json({
       notifications,
       totalNotifications,
       limit,
       skip,
-      numberOfNotificationsFetched: Math.min(
-        parseInt(skip) + parseInt(limit),
-        totalNotifications
-      ),
+      nextSkip: nextSkip,
     });
   } catch (error) {
     console.log(error);
@@ -42,13 +50,20 @@ export const getUserNotifications = async (request, response) => {
 
 export const getUserMentions = async (request, response) => {
   const userId = request.identify._id.toString();
-  const { limit = 50, skip = 0 } = request.query;
+  const limit = parseInt(request.query.limit) || 10;
+  const skip = parseInt(request.query.skip);
   try {
     // count all notifications sent to the user
     const totalNotifications = await Notification.countDocuments({
       to: userId,
       type: "reply",
+      deleted: false,
+      show: true,
     });
+    if (totalNotifications === 0)
+      return response
+        .status(200)
+        .json({ message: `You don't have any mentions` });
 
     // get all mentions sent to the user that are not deleted and are set to show
     const mentions = await Notification.find({
@@ -67,15 +82,16 @@ export const getUserMentions = async (request, response) => {
     if (!mentions || mentions.length === 0) {
       return response.status(404).json({ error: `No mentions found` });
     }
+
+    const remainingNotifications = totalNotifications - skip - limit;
+    const nextSkip = remainingNotifications > 0 ? skip + limit : null;
+
     return response.status(200).json({
       mentions,
       totalNotifications,
       limit,
       skip,
-      numberOfNotificationsFetched: Math.min(
-        parseInt(skip) + parseInt(limit),
-        totalNotifications
-      ),
+      nextSkip: nextSkip,
     });
   } catch (error) {
     console.log(error);

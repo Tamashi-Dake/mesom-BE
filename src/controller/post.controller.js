@@ -426,41 +426,42 @@ export const getLikedPostsByUser = async (request, response) => {
 export const getUserBookmarks = async (request, response) => {
   const userId = request.identify._id.toString();
   const limit = parseInt(request.query.limit) || 10;
-  const skip = parseInt(request.query.skip);
+  const skip = parseInt(request.query.skip) || 0;
   try {
     const user = await User.findById(userId);
     const bookmarks = user.bookmarks;
-
-    const posts = await Post.find({
-      _id: { $in: bookmarks },
-      deleted: false,
-    })
-      .sort({ createdAt: -1 })
-      .limit(limit)
-      .skip(skip)
-      .populate({
-        path: "author",
-        select: " displayName username profile.avatarImg",
-      });
-    if (!posts) {
+    if (bookmarks.length === 0) {
       return response
-        .status(404)
+        .status(200)
         .json({ message: "You don't have any bookmarks" });
     }
 
-    const totalPosts = await Post.countDocuments({
-      _id: { $in: bookmarks },
+    const totalPosts = user.bookmarks.length;
+    const sortedBookmarks = user.bookmarks
+      .sort((a, b) => b.bookmarkedAt - a.bookmarkedAt)
+      .slice(skip, skip + limit);
+    const postIds = sortedBookmarks.map((bookmark) => bookmark.post);
+    const posts = await Post.find({
+      _id: { $in: postIds },
       deleted: false,
+    }).populate({
+      path: "author",
+      select: "displayName username profile.avatarImg",
     });
+
+    // Bảo toàn thứ tự
+    const sortedPosts = postIds.map((id) =>
+      posts.find((post) => post._id.toString() === id.toString())
+    );
 
     const remainingPosts = totalPosts - skip - limit;
     const nextSkip = remainingPosts > 0 ? skip + limit : null;
 
     return response.status(200).json({
-      posts,
+      posts: sortedPosts,
       totalPosts,
-      limit: parseInt(limit),
-      skip: parseInt(skip),
+      limit: limit,
+      skip: skip,
       nextSkip: nextSkip,
     });
   } catch (error) {
@@ -730,16 +731,38 @@ export const toggleBookmarkPost = async (request, response) => {
   try {
     // Check if the user / post exists
     const user = await User.findById(userID);
-    // Check if the user has already shared the post
-    const isBookmarked = user.bookmarks.includes(postID);
-    // Tính toán số lượng thay đổi cho userBookmarks
-    const bookmarkChange = isBookmarked ? -1 : 1;
+    // // Kiểm tra xem bài viết đã được chia sẻ hay chưa
+    // !isBookmarked ? user.bookmarks.push(postID) : user.bookmarks.pull(postID);
+    // await user.save();
 
-    // Kiểm tra xem bài viết đã được chia sẻ hay chưa
-    !isBookmarked ? user.bookmarks.push(postID) : user.bookmarks.pull(postID);
+    // // Cập nhật userBookmarks trên bài viết và thông tin bookmarks của user
+    // const updatedPost = await Post.findOneAndUpdate(
+    //   { _id: postID },
+    //   { $inc: { userBookmarks: bookmarkChange } },
+    //   { new: true }
+    // );
+
+    // Kiểm tra xem bài viết đã được bookmark hay chưa
+    const isBookmarked = user.bookmarks.some(
+      (bookmark) => bookmark.post.toString() === postID.toString()
+    );
+
+    if (!isBookmarked) {
+      user.bookmarks.push({
+        post: postID,
+        bookmarkedAt: new Date(),
+      });
+    } else {
+      // Xóa bookmark, tìm đối tượng có post là postID và xóa
+      user.bookmarks = user.bookmarks.filter(
+        (bookmark) => bookmark.post.toString() !== postID.toString()
+      );
+    }
+
     await user.save();
 
-    // Cập nhật userBookmarks trên bài viết và thông tin bookmarks của user
+    // Cập nhật số lượng bookmarks trên bài viết
+    const bookmarkChange = isBookmarked ? -1 : 1;
     const updatedPost = await Post.findOneAndUpdate(
       { _id: postID },
       { $inc: { userBookmarks: bookmarkChange } },
