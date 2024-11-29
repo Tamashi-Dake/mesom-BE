@@ -199,6 +199,17 @@ export const getPostsByFollowing = async (request, response) => {
     // get following of user
     const following = user.following;
 
+    // get total number of posts
+    const totalPosts = await Post.countDocuments({
+      author: { $in: following },
+      parent: { $exists: false },
+      deleted: false,
+    });
+    if (totalPosts === 0)
+      return response
+        .status(202)
+        .json({ message: "No posts from people you follow yet." });
+
     // get posts from user in following
     const posts = await Post.find({
       author: { $in: following },
@@ -217,13 +228,6 @@ export const getPostsByFollowing = async (request, response) => {
         .status(404)
         .json({ message: "You aren't following anyone" });
     }
-
-    // get total number of posts
-    const totalPosts = await Post.countDocuments({
-      author: { $in: following },
-      parent: { $exists: false },
-      deleted: false,
-    });
 
     const remainingPosts = totalPosts - skip - limit;
     const nextSkip = remainingPosts > 0 ? skip + limit : null;
@@ -254,6 +258,10 @@ export const getPostsByUser = async (request, response) => {
       ],
       deleted: false,
     });
+    if (totalPosts === 0)
+      return response
+        .status(202)
+        .json({ message: "This user hasn't posted yet" });
 
     // get all posts by the user and posts with userShared contains the userID
     const posts = await Post.find({
@@ -300,6 +308,10 @@ export const getRepliesByUser = async (request, response) => {
       author: userId,
       deleted: false,
     });
+    if (totalPosts === 0)
+      return response
+        .status(202)
+        .json({ message: "This user hasn't replied yet" });
 
     const posts = await Post.find({
       parent: { $exists: true },
@@ -344,6 +356,10 @@ export const getMediasByUser = async (request, response) => {
       deleted: false,
       images: { $ne: [] },
     });
+    if (totalPosts === 0)
+      return response
+        .status(202)
+        .json({ message: "This user hasn't posted any photos yet" });
 
     const posts = await Post.find({
       parent: { $exists: false },
@@ -391,6 +407,10 @@ export const getLikedPostsByUser = async (request, response) => {
       userLikes: userId,
       deleted: false,
     });
+    if (totalLikedPosts === 0)
+      return response
+        .status(202)
+        .json({ message: "This user hasn't liked any posts yet" });
 
     // get all liked posts contains the userID
     const posts = await Post.find({ userLikes: userId, deleted: false })
@@ -430,14 +450,14 @@ export const getUserBookmarks = async (request, response) => {
   try {
     const user = await User.findById(userId);
     const bookmarks = user.bookmarks;
-    if (bookmarks.length === 0) {
+    const totalPosts = bookmarks.length;
+    if (totalPosts === 0) {
       return response
         .status(200)
         .json({ message: "You don't have any bookmarks" });
     }
 
-    const totalPosts = user.bookmarks.length;
-    const sortedBookmarks = user.bookmarks
+    const sortedBookmarks = bookmarks
       .sort((a, b) => b.bookmarkedAt - a.bookmarkedAt)
       .slice(skip, skip + limit);
     const postIds = sortedBookmarks.map((bookmark) => bookmark.post);
@@ -497,13 +517,17 @@ export const getPost = async (request, response) => {
 export const getRepliesForPost = async (request, response) => {
   const { id: parentPostID } = request.params;
   const limit = parseInt(request.query.limit) || 10;
-  const skip = parseInt(request.query.skip);
+  const skip = parseInt(request.query.skip) || 0;
   try {
     // count all replies for the post
     const totalReplies = await Post.countDocuments({
-      parentPostID,
+      "parent.parentPostID": parentPostID,
       deleted: false,
     });
+    if (totalReplies === 0)
+      return response
+        .status(202)
+        .json({ message: "This post has no replies yet" });
 
     // get all replies for the post
     const replies = await Post.find({
@@ -561,30 +585,33 @@ export const deletePost = async (request, response) => {
     }
 
     // check if the post has images
-    // if (post.images && post.images.length > 0) {
-    //   // Delete images from cloudinary
-    //   for (let i = 0; i < post.images.length; i++) {
-    //     const publicImageID = post.images[i].split("/").pop().split(".")[0];
-    //     await cloudinary.uploader.destroy(`Mesom/PostImage/${publicImageID}`);
-    //   }
-    // }
+    if (post.images && post.images.length > 0) {
+      // Delete images from cloudinary
+      for (let i = 0; i < post.images.length; i++) {
+        const publicImageID = post.images[i].split("/").pop().split(".")[0];
+        await cloudinary.uploader.destroy(`Mesom/PostImage/${publicImageID}`);
+      }
+    }
 
-    // if (post.parentPostID) {
-    //   const updatedPost = await Post.findOneAndUpdate(
-    //     { _id: post.parentPostID },
-    //     { $inc: { userReplies: -1 } },
-    //     { new: true } // Trả về document đã được cập nhật
-    //   );
+    // Update the post as deleted and clear the images
+    await Post.updateOne(
+      { _id: postID },
+      { $set: { deleted: true, images: [] } }
+    );
 
-    // Delete the post
-    // await post.deleteOne();
+    // If the post is a reply, update the parent post's reply count
+    if (post.parent.parentPostID) {
+      const updatedPost = await Post.findOneAndUpdate(
+        { _id: post.parent.parentPostID },
+        { $inc: { userReplies: -1 } },
+        { new: true } // Trả về document đã được cập nhật
+      );
 
-    //   return response.status(200).json({
-    //     message: "Reply deleted successfully",
-    //     // numberReplies: updatedPost.userReplies,
-    //   });
-    // }
-    console.log("change to soft delete");
+      return response.status(200).json({
+        message: "Reply deleted successfully",
+        numberReplies: updatedPost.userReplies,
+      });
+    }
     return response.status(200).json({ message: "Post deleted successfully" });
   } catch (error) {
     console.log(error);
@@ -802,7 +829,7 @@ export const increasePostView = async (request, response) => {
 
       return response.status(200).json({ message: `Post view increased` });
     } else {
-      return response.status(400).json({ error: `You just viewed this post` });
+      return response.status(202).json({ error: `You just viewed this post` });
     }
   } catch (error) {
     console.log(error);

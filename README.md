@@ -69,12 +69,7 @@
   - [x] Read all posts (pagination)
   - [x] Read replies of post
   - [ ] Update post (only for Premium users)
-  - [ ] Delete post - OR - set Post as Deleted -> just need to filter in get Posts
-    - [ ] casade delete replies
-    - [ ] remove related notifications
-    - [ ] blockedPost in user Setting
-    - [ ] user Bookmark
-    - [ ] update related documents
+  - [x] Delete post (soft Delete)
   - [x] Like post
   - [x] Share post
   - [x] Bookmark post
@@ -82,11 +77,7 @@
   - [ ] Tags
 
 - [ ] Limit api request (express-rate-limit)
-- [ ] Add cron job to clean up notifications (item is hiden or deleted)
-
-- [ ] Admin account
-  - [ ] check deleted Post (only Admin can see deleted Post)
-  - [ ] Delete any Post
+- [ ] Add cron job to clean up notifications (item is hidden or deleted)
 
 #### Models
 
@@ -110,6 +101,5 @@
 
 #### More
 
-- [ ] User page (Tabs: Posts (Post and Shared Post), Replies (also include Posts), Medias(Post with Image), Likes(Liked Posts))
 - [ ] Search (Users, Tags)
 - [ ] Auto taggings images (with Cloudinary)
