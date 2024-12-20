@@ -27,7 +27,10 @@ export const getUserNotifications = async (request, response) => {
       })
       .limit(limit)
       .skip(skip)
-      .populate("from", "displayName username profile.avatarImg");
+      .populate(
+        "from",
+        "displayName username profile.avatarImg profile.coverImg profile.bio following followers"
+      );
     if (!notifications || notifications.length === 0) {
       return response.status(404).json({ error: `No notifications found` });
     }
@@ -77,7 +80,10 @@ export const getUserMentions = async (request, response) => {
       })
       .limit(limit)
       .skip(skip)
-      .populate("from", "displayName username profile.avatarImg")
+      .populate(
+        "from",
+        "displayName username profile.avatarImg profile.coverImg profile.bio following followers"
+      )
       .populate("post");
     if (!mentions || mentions.length === 0) {
       return response.status(404).json({ error: `No mentions found` });

@@ -7,9 +7,6 @@ import Notification from "../db/notification.model.js";
 import View from "../db/view.model.js";
 import { randomDelay } from "../util/delay.js";
 
-// TODO: refactor interaction functions to return updated value
-// => react-query don't have to refetch all data
-
 export const createPost = async (req, res) => {
   const { text } = req.body;
   const files = req.files;
@@ -165,7 +162,8 @@ export const getAllPosts = async (request, response) => {
       .limit(parseInt(limit))
       .populate({
         path: "author",
-        select: " displayName username profile.avatarImg",
+        select:
+          "displayName username profile.avatarImg profile.coverImg profile.bio following followers",
       });
 
     // get total number of posts
@@ -221,7 +219,8 @@ export const getPostsByFollowing = async (request, response) => {
       .skip(skip)
       .populate({
         path: "author",
-        select: " displayName username profile.avatarImg",
+        select:
+          "displayName username profile.avatarImg profile.coverImg profile.bio following followers",
       });
     if (!posts) {
       return response
@@ -276,7 +275,8 @@ export const getPostsByUser = async (request, response) => {
       .limit(parseInt(limit))
       .populate({
         path: "author",
-        select: "displayName username profile.avatarImg",
+        select:
+          "displayName username profile.avatarImg profile.coverImg profile.bio following followers",
       });
     if (!posts) {
       return response.status(404).json({ message: "No posts found" });
@@ -323,7 +323,8 @@ export const getRepliesByUser = async (request, response) => {
       .limit(parseInt(limit))
       .populate({
         path: "author",
-        select: "displayName username profile.avatarImg",
+        select:
+          "displayName username profile.avatarImg profile.coverImg profile.bio following followers",
       });
     if (!posts) {
       return response.status(404).json({ message: "No posts found" });
@@ -372,7 +373,8 @@ export const getMediasByUser = async (request, response) => {
       .limit(parseInt(limit))
       .populate({
         path: "author",
-        select: "displayName username profile.avatarImg",
+        select:
+          "displayName username profile.avatarImg profile.coverImg profile.bio following followers",
       });
     if (!posts) {
       return response.status(404).json({ message: "No posts found" });
@@ -419,7 +421,8 @@ export const getLikedPostsByUser = async (request, response) => {
       .limit(parseInt(limit))
       .populate({
         path: "author",
-        select: " displayName username profile.avatarImg",
+        select:
+          " displayName username profile.avatarImg profile.coverImg profile.bio following followers",
       });
     if (!posts) {
       return response
@@ -466,7 +469,8 @@ export const getUserBookmarks = async (request, response) => {
       deleted: false,
     }).populate({
       path: "author",
-      select: "displayName username profile.avatarImg",
+      select:
+        "displayName username profile.avatarImg profile.coverImg profile.bio following followers",
     });
 
     // Bảo toàn thứ tự
@@ -496,7 +500,8 @@ export const getPost = async (request, response) => {
   try {
     const post = await Post.findById(id).populate({
       path: "author",
-      select: " displayName username profile.avatarImg",
+      select:
+        " displayName username profile.avatarImg profile.coverImg profile.bio following followers",
     });
     if (post.deleted) {
       return response.status(200).json({
@@ -539,7 +544,8 @@ export const getRepliesForPost = async (request, response) => {
       .limit(parseInt(limit))
       .populate({
         path: "author",
-        select: "displayName username profile.avatarImg",
+        select:
+          "displayName username profile.avatarImg profile.coverImg profile.bio following followers",
       });
     if (!replies) {
       response.status(404).json({ message: "No replies found" });
