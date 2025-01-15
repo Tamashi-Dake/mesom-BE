@@ -1,12 +1,19 @@
-import { getSetting, updateSetting } from "../controller/setting.controller.js";
+import {
+  getDisplaySetting,
+  getSetting,
+  updateDisplaySetting,
+  updateSetting,
+} from "../controller/setting.controller.js";
 import { isAuthenticated } from "../middlewares/index.js";
 
 export default (router) => {
   // get user Setting
-  router.get("/setting", isAuthenticated, getSetting);
+  router.get("/settings", isAuthenticated, getSetting);
+  router.get("/settings/display", isAuthenticated, getDisplaySetting);
 
   // update user Setting
-  router.patch("/setting", isAuthenticated, updateSetting);
+  router.patch("/settings", isAuthenticated, updateSetting);
+  router.patch("/settings/display", isAuthenticated, updateDisplaySetting);
 
   // // Blocked users
   // // update blocked users
@@ -19,12 +26,4 @@ export default (router) => {
 
   // // update blocked posts
   // router.patch("/setting/blocked-posts", isAuthenticated, updateBlockedPosts);
-
-  // // Theme preferences
-
-  // // update theme
-  // router.patch("/setting/theme", isAuthenticated, updateTheme);
-
-  // // update accent color
-  // router.patch("/setting/accent-color", isAuthenticated, updateAccentColor);
 };

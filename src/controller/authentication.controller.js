@@ -73,7 +73,7 @@ export const login = async (request, response) => {
 
     // check if user exists and get user authentication details
     const user = await getUserByUsername(username).select(
-      "+authentication.salt +authentication.password"
+      "+authentication.salt +authentication.password -bookmarks -profile -following -followers"
     );
 
     if (!user) {

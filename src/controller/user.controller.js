@@ -81,7 +81,7 @@ export const updateUser = async (request, response) => {
 
     if (files.avatarImg && files.avatarImg.length > 0) {
       if (user.profile.avatarImg) {
-        console.log(user.profile.avatarImg.split("/").pop().split(".")[0]);
+        // console.log(user.profile.avatarImg.split("/").pop().split(".")[0]);
         await cloudinary.uploader.destroy(
           `Mesom/AvatarImage/${
             user.profile.avatarImg.split("/").pop().split(".")[0]
@@ -157,12 +157,12 @@ export const updatePassword = async (request, response) => {
 
     // Check if oldPassword, newPassword, confirmPassword is missing
     if (!oldPassword || !newPassword || !confirmPassword) {
-      console.log(
-        "oldPassword, newPassword, confirmPassword is missing",
-        oldPassword,
-        newPassword,
-        confirmPassword
-      );
+      // console.log(
+      //   "oldPassword, newPassword, confirmPassword is missing",
+      //   oldPassword,
+      //   newPassword,
+      //   confirmPassword
+      // );
       return response.status(400).json({
         error: "Please fill in all the fields",
       });

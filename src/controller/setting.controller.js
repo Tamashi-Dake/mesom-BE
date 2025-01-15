@@ -3,7 +3,6 @@ import Setting from "../db/setting.model.js";
 export const getSetting = async (request, response) => {
   const userId = request.identify._id.toString();
   try {
-    // Find the user setting
     const setting = await Setting.findOne({
       user: userId,
     });
@@ -15,6 +14,28 @@ export const getSetting = async (request, response) => {
     return response
       .status(400)
       .json({ message: "Error while fetching user setting" });
+  }
+};
+
+export const getDisplaySetting = async (request, response) => {
+  const userId = request.identify._id.toString();
+
+  try {
+    const userSetting = await Setting.findOne({ user: userId }).select(
+      "themePreferences"
+    );
+
+    if (!userSetting) {
+      return response.status(404).json({ message: "Setting not found" });
+    }
+
+    return response.status(200).json({
+      theme: userSetting.themePreferences.theme,
+      accent: userSetting.themePreferences.accent,
+    });
+  } catch (error) {
+    console.error(error);
+    return response.status(500).json({ message: "Server error" });
   }
 };
 
@@ -65,5 +86,36 @@ export const updateSetting = async (request, response) => {
     return response
       .status(400)
       .json({ message: "Error while updating user setting" });
+  }
+};
+
+export const updateDisplaySetting = async (request, response) => {
+  const userId = request.identify._id.toString();
+
+  const { theme, accent } = request.body;
+
+  try {
+    const updatedSetting = await Setting.findOneAndUpdate(
+      { user: userId },
+      {
+        $set: {
+          "themePreferences.theme": theme || "light",
+          "themePreferences.accent": accent || "blue",
+        },
+      },
+      { new: true, runValidators: true } // Lấy document mới nhất sau khi update
+    );
+
+    if (!updatedSetting) {
+      return response.status(404).json({ message: "Setting not found" });
+    }
+
+    return response.status(200).json({
+      message: "Theme preferences updated successfully",
+      themePreferences: updatedSetting.themePreferences,
+    });
+  } catch (error) {
+    console.error(error);
+    return response.status(500).json({ message: "Server error" });
   }
 };

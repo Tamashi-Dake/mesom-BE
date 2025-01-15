@@ -41,7 +41,7 @@ const settingSchema = new mongoose.Schema(
         type: String,
         default: "light",
       },
-      accentColor: {
+      accent: {
         type: String,
         default: "blue",
       },
