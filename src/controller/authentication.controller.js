@@ -104,8 +104,8 @@ export const login = async (request, response) => {
     response.cookie("mesom-auth", user.authentication.sessionToken, {
       httpOnly: true, // Chỉ cho phép đọc cookie từ phía máy chủ ( tránh XSS attacks )
       secure: process.env.NODE_ENV !== "development", // Chỉ gửi cookie qua HTTPS
-      sameSite: "strict", // Chỉ cho phép gửi cookie cùng site ( tránh CSRF attacks )
-      domain: process.env.COOKIE_DOMAIN || "localhost",
+      // sameSite: "strict", // Chỉ cho phép gửi cookie cùng site ( tránh CSRF attacks )
+      // domain: process.env.COOKIE_DOMAIN || "localhost",
       path: "/",
       maxAge: 1000 * 60 * 60 * 24, // 1 day
     });
