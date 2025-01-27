@@ -33,6 +33,7 @@ app.use(
       process.env.NODE_ENV === "production"
         ? process.env.PROD_URL
         : "http://localhost:5173",
+    allowedHeaders: ["Content-Type", "Authorization", "mesom-auth"],
     credentials: true,
   })
 );
