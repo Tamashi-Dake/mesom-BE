@@ -5,11 +5,12 @@ import {
   getUserBySessionToken,
 } from "../db/user.model.js";
 import { authentication, random } from "../util/authenticationCrypto.js";
+import validatePassword from "../util/validatePassword.js";
 
 export const register = async (request, response) => {
   try {
     // Get username and password from request body
-    const { username, password } = request.body;
+    const { username, password, confirmPassword } = request.body;
 
     // Check if username or password is missing
     if (!username || !password) {
@@ -24,6 +25,12 @@ export const register = async (request, response) => {
       return response
         .status(400)
         .json({ error: true, message: "User already exists" });
+    }
+
+    const validationError = validatePassword(password, confirmPassword);
+
+    if (validationError) {
+      return response.status(400).json(validationError);
     }
 
     // Generate salt
@@ -186,5 +193,69 @@ export const getCurrentUser = async (request, response) => {
   } catch (error) {
     console.log(error);
     return response.status(400).json({ error: "Error getting current user" });
+  }
+};
+
+export const updatePassword = async (request, response) => {
+  const { username } = request.identify;
+
+  let { oldPassword, newPassword, confirmPassword } = request.body;
+  try {
+    // check if user exists and get user authentication details
+    const user = await getUserByUsername(username).select(
+      "+authentication.salt +authentication.password"
+    );
+
+    if (!user) {
+      return response
+        .status(404)
+        .json({ error: true, message: "User does not exist" });
+    }
+
+    // Check if oldPassword, newPassword, confirmPassword is missing
+    if (!oldPassword || !newPassword || !confirmPassword) {
+      return response.status(400).json({
+        error: "Please fill in all the fields",
+      });
+    }
+
+    // Check if oldPassword is correct
+    const oldPasswordHash = authentication(
+      user.authentication.salt,
+      oldPassword
+    );
+    if (oldPasswordHash !== user.authentication.password) {
+      return response.status(403).json({ error: "Your password is incorrect" });
+    }
+
+    // Check if newPassword is same as oldPassword
+    const newPasswordHash = authentication(
+      user.authentication.salt,
+      newPassword
+    );
+    if (newPasswordHash === user.authentication.password) {
+      return response.status(400).json({
+        error: "New password cannot be same as old password",
+      });
+    }
+
+    const validationError = validatePassword(newPassword, confirmPassword);
+
+    if (validationError) {
+      return response.status(400).json(validationError);
+    }
+
+    // Update password
+    const newSalt = random();
+    user.authentication.salt = newSalt;
+
+    user.authentication.password = authentication(newSalt, newPassword);
+    await user.save();
+    return response.status(200).json({
+      message: "Password updated successfully",
+    });
+  } catch (error) {
+    console.log("Error in updatePassword", error);
+    return response.sendStatus(500).json({ error: `Error: ${error}` });
   }
 };

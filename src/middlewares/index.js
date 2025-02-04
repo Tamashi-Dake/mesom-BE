@@ -3,6 +3,7 @@ import merge from "lodash/merge.js";
 import { getUserById, getUserBySessionToken } from "../db/user.model.js";
 import Post from "../db/post.model.js";
 import Setting from "../db/setting.model.js";
+import Conversation from "../db/conversation.model.js";
 
 export const isAuthenticated = async (request, response, next) => {
   try {
@@ -56,6 +57,34 @@ export const checkPostStatus = async (request, response, next) => {
       return response
         .status(400)
         .json({ error: true, message: "Post does not exist" });
+    }
+
+    // continue to next middleware
+    return next();
+  } catch (error) {
+    console.log(error);
+    return response.status(400).json({ error: `Error: ${error}` });
+  }
+};
+
+// check if conversation is exist
+export const checkConversationStatus = async (request, response, next) => {
+  // get post id from request params
+  const { id } = request.params;
+  try {
+    // check if conversation id is missing
+    if (!id) {
+      return response
+        .status(400)
+        .json({ error: true, message: "Conversation ID is missing" });
+    }
+
+    // get conversation by id
+    const post = await Conversation.findById(id);
+    if (!post) {
+      return response
+        .status(400)
+        .json({ error: true, message: "Conversation does not exist" });
     }
 
     // continue to next middleware
@@ -153,38 +182,5 @@ export const checkUserNotificationSettings = async (
   } catch (error) {
     console.error("Error checking user settings:", error);
     return response.status(500).json({ error: "Server error" });
-  }
-};
-
-// only work with User documents
-export const isOwner = async (request, response, next) => {
-  try {
-    // get user id from request params
-    const { id } = request.params;
-    // get current user id from request
-    const currentUserID = get(request, "identify._id");
-    // console.log(request.identify);
-
-    // check if current user is missing
-    if (!currentUserID) {
-      return response
-        .status(401)
-        .json({ error: true, message: "Unauthorized" });
-    }
-
-    // check if current user is not the owner of the resource
-    if (currentUserID.toString() !== id) {
-      return response
-        .status(403)
-        .json({ error: true, message: "You are not the owner!" });
-    }
-
-    // continue to next middleware
-    return next();
-  } catch (error) {
-    console.log(error);
-    return response
-      .status(400)
-      .json({ error: true, message: `Error: ${error}` });
   }
 };

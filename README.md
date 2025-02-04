@@ -58,9 +58,9 @@
     - [ ] block notifications from specific user
     - [x] block notifications from specific type
     - [x] block notifications from specific post
-  - [ ] Change theme
-    - [ ] Change theme color
-    - [ ] Change accent color
+  - [x] Change theme
+    - [x] Change theme color
+    - [x] Change accent color
 
 - [ ] Posts ( preview image (use URL.createObjectURL))
 
@@ -75,6 +75,17 @@
   - [x] Bookmark post
   - [x] View post
   - [ ] Tags
+
+- [ ] Real-time Message
+
+  - [ ] Conversation
+    - [ ] CRU
+    - [ ] Hide conversation with user
+    - [ ] Block user
+  - [ ] Message
+    - [ ] CRUD
+    - [ ] React to message
+    - [ ] Reply to message
 
 - [ ] Limit api request (express-rate-limit)
 - [ ] Add cron job to clean up notifications (item is hidden or deleted)

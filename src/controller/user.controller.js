@@ -10,6 +10,7 @@ import Notification from "../db/notification.model.js";
 
 import { authentication, random } from "../util/authenticationCrypto.js";
 import streamUpload from "../util/streamUpload.js";
+import checkFollowLimit from "../util/checkFollowLimit.js";
 
 // export const getAllUsers = async (request, response) => {
 //   try {
@@ -39,7 +40,7 @@ export const getUserFromUsername = async (request, response) => {
 
 export const deleteUser = async (request, response) => {
   try {
-    const { id } = request.params;
+    const id = request.identify._id.toString();
     const user = await deleteUserById(id);
     return response.status(200).json({
       message: `User with id ${id} deleted`,
@@ -64,7 +65,7 @@ export const deleteUser = async (request, response) => {
 // user.username = username;
 //  username,
 export const updateUser = async (request, response) => {
-  const { id } = request.params;
+  const id = request.identify._id.toString();
   const { displayName, bio, location, website } = request.body;
   const files = request.files;
   try {
@@ -95,15 +96,6 @@ export const updateUser = async (request, response) => {
       user.profile.avatarImg = avatarResult.secure_url;
     }
 
-    // const uploadResponse = await cloudinary.uploader.upload(
-    //   files.avatarImg[0].buffer,
-    //   {
-    //     folder: "Mesom/AvatarImage",
-    //   }
-    // );
-    // user.profile.avatarImg = uploadResponse.secure_url;
-    // }
-
     if (files.coverImg && files.coverImg.length > 0) {
       if (user.profile.coverImg) {
         await cloudinary.uploader.destroy(
@@ -118,14 +110,6 @@ export const updateUser = async (request, response) => {
         "Mesom/CoverImage"
       );
       user.profile.coverImg = coverResult.secure_url;
-
-      // const uploadResponse = await cloudinary.uploader.upload(
-      //   files.coverImg[0].buffer,
-      //   {
-      //     folder: "Mesom/CoverImage",
-      //   }
-      // );
-      // user.profile.coverImg = uploadResponse.secure_url;
     }
 
     await user.save();
@@ -135,93 +119,6 @@ export const updateUser = async (request, response) => {
   } catch (error) {
     console.log(error);
     return response.sendStatus(400);
-  }
-};
-
-export const updatePassword = async (request, response) => {
-  const { id } = request.params;
-  const { username } = request.identify;
-
-  let { oldPassword, newPassword, confirmPassword } = request.body;
-  try {
-    // check if user exists and get user authentication details
-    const user = await getUserByUsername(username).select(
-      "+authentication.salt +authentication.password"
-    );
-
-    if (!user) {
-      return response
-        .status(404)
-        .json({ error: true, message: "User does not exist" });
-    }
-
-    // Check if oldPassword, newPassword, confirmPassword is missing
-    if (!oldPassword || !newPassword || !confirmPassword) {
-      // console.log(
-      //   "oldPassword, newPassword, confirmPassword is missing",
-      //   oldPassword,
-      //   newPassword,
-      //   confirmPassword
-      // );
-      return response.status(400).json({
-        error: "Please fill in all the fields",
-      });
-    }
-
-    // Check if oldPassword is correct
-    const oldPasswordHash = authentication(
-      user.authentication.salt,
-      oldPassword
-    );
-    if (oldPasswordHash !== user.authentication.password) {
-      return response.status(403).json({ error: "Your password is incorrect" });
-    }
-
-    // Check if newPassword is same as oldPassword
-    const newPasswordHash = authentication(
-      user.authentication.salt,
-      newPassword
-    );
-    if (newPasswordHash === user.authentication.password) {
-      return response.status(400).json({
-        error: "New password cannot be same as old password",
-      });
-    }
-
-    // Check if newPassword and confirmPassword match
-    if (newPassword !== confirmPassword) {
-      return response.status(400).json({
-        error: "New password and confirm password do not match",
-      });
-    }
-
-    // Check if newPassword is valid
-    // if (newPassword.length < 6) {
-    //   return response.status(400).json({
-    //     error: "Password must be at least 6 characters",
-    //   });
-    // }
-    // const hasChars = /[a-zA-Z]/.test(newPassword);
-    // const hasNumbers = /\d/.test(newPassword);
-    // const hasNonalphas = /\W/.test(newPassword);
-    // if (!hasChars || !hasNumbers || !hasNonalphas) {
-    //   return response.status(400).json({
-    //     error: "Password must contain at least one letter, one number, and one special character",
-    //   })
-    // }
-
-    // Update password
-    const newSalt = random();
-    user.authentication.salt = newSalt;
-
-    user.authentication.password = authentication(newSalt, newPassword);
-    await user.save();
-    return response.status(200).json({
-      message: "Password updated successfully",
-    });
-  } catch (error) {
-    console.log("Error in updatePassword", error);
-    return response.sendStatus(500).json({ error: `Error: ${error}` });
   }
 };
 
@@ -248,27 +145,24 @@ export const toggleFollowUser = async (request, response) => {
       to: targetUser._id,
     });
 
-    // TODO: Add
-    // following limit (e.g. 1000 for free users, 5000 for verified users)
-    // followers limit (e.g. 1000 for free users, 5000 for verified users)
-
-    // check following limit for current user
-    if (
-      currentUser.following.length >= 1000 &&
-      currentUser.verified === false
-    ) {
-      return response.status(400).json({
-        error:
-          "You have reached the maximum following limit, please upgrade to a verified account",
-      });
+    // Check current user's following limit
+    const currentUserError = checkFollowLimit(
+      currentUser.verified,
+      "following",
+      currentUser.following.length
+    );
+    if (currentUserError) {
+      return response.status(403).json(currentUserError);
     }
 
-    // check followers limit for target user
-    if (targetUser.followers.length >= 1000 && targetUser.verified === false) {
-      return response.status(400).json({
-        error:
-          "This user has reached the maximum followers limit, please ask them to upgrade to a verified account",
-      });
+    // Check target user's followers limit
+    const targetUserError = checkFollowLimit(
+      targetUser.verified,
+      "followers",
+      targetUser.followers.length
+    );
+    if (targetUserError) {
+      return response.status(403).json(targetUserError);
     }
 
     // Follow or unfollow user
@@ -316,6 +210,48 @@ export const toggleFollowUser = async (request, response) => {
     });
   } catch (error) {
     console.log("Error when follow user", error);
+    return response.status(400).json({ error: `Error: ${error}` });
+  }
+};
+
+export const toggleBlockUser = async (request, response) => {
+  const { id: targetUserId } = request.params;
+  const currentUserId = request.identify._id.toString();
+  try {
+    const userSetting = await Setting.findOne({ user: currentUserId }).select(
+      "blockedUser"
+    );
+    if (!userSetting) {
+      return response.status(404).json({ message: "Setting not found" });
+    }
+
+    // Check if user is trying to block themselves
+    if (currentUserId === targetUserId) {
+      return response.status(400).json({ error: "You cannot block yourself" });
+    }
+
+    // Check if user is already blocked
+    const isBlocked = userSetting.blockedUser.includes(targetUserId);
+
+    // Block or unblock user
+    if (!isBlocked) {
+      // Add user to blocked list
+      userSetting.blockedUser.push(targetUserId);
+    } else {
+      // Remove user from blocked list
+      userSetting.blockedUser.pull(targetUserId);
+    }
+
+    // // Save changes to current user
+    await userSetting.save();
+
+    return response.status(200).json({
+      message: !isBlocked
+        ? ` ${targetUserId} blocked successfully`
+        : `${targetUserId} unblocked successfully`,
+    });
+  } catch (error) {
+    console.log("Error when block user", error);
     return response.status(400).json({ error: `Error: ${error}` });
   }
 };
