@@ -46,17 +46,13 @@ export const checkPostStatus = async (request, response, next) => {
   try {
     // check if post id is missing
     if (!id) {
-      return response
-        .status(400)
-        .json({ error: true, message: "Post ID is missing" });
+      return response.status(400).json({ message: "Post ID is missing" });
     }
 
     // get post by id
     const post = await Post.findById(id);
     if (!post) {
-      return response
-        .status(400)
-        .json({ error: true, message: "Post does not exist" });
+      return response.status(400).json({ message: "Post does not exist" });
     }
 
     // continue to next middleware
@@ -76,7 +72,7 @@ export const checkConversationStatus = async (request, response, next) => {
     if (!id) {
       return response
         .status(400)
-        .json({ error: true, message: "Conversation ID is missing" });
+        .json({ message: "Conversation ID is missing" });
     }
 
     // get conversation by id
@@ -84,7 +80,7 @@ export const checkConversationStatus = async (request, response, next) => {
     if (!post) {
       return response
         .status(400)
-        .json({ error: true, message: "Conversation does not exist" });
+        .json({ message: "Conversation does not exist" });
     }
 
     // continue to next middleware
@@ -102,17 +98,13 @@ export const checkUserStatus = async (request, response, next) => {
   try {
     // check if user id is missing
     if (!userId) {
-      return response
-        .status(400)
-        .json({ error: true, message: "User ID is missing" });
+      return response.status(400).json({ message: "User ID is missing" });
     }
 
     // get user by id
     const user = await getUserById(userId);
     if (!user) {
-      return response
-        .status(400)
-        .json({ error: true, message: "UserID: User does not exist" });
+      return response.status(400).json({ message: "User does not exist" });
     }
 
     // continue to next middleware

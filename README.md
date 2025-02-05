@@ -78,12 +78,14 @@
 
 - [ ] Real-time Message
 
-  - [ ] Conversation
-    - [ ] CRU
-    - [ ] Hide conversation with user
-    - [ ] Block user
+  - [x] Conversation
+    - [x] CRU
+    - [x] Hide conversation with user
+    - [x] Block user
+    - [ ] Search conversation
   - [ ] Message
     - [ ] CRUD
+      - [ ] Send Direct Message (If user doesn't blocked and not in group, send message)
     - [ ] React to message
     - [ ] Reply to message
 

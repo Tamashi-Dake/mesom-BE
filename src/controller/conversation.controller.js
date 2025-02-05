@@ -1,5 +1,7 @@
-import { request, response } from "express";
+import { v2 as cloudinary } from "cloudinary";
+
 import Conversation from "../db/conversation.model.js";
+import streamUpload from "../util/streamUpload.js";
 
 export const createConversation = async (request, response) => {
   const { participants, name } = request.body;
@@ -100,11 +102,91 @@ export const getUserConversations = async (request, response) => {
 
 export const getConversation = async (request, response) => {
   const { id } = request.params;
-
+  const currentUserId = request.identify.id;
   try {
-    //TODO: Find conversation by id, only allow participants to view the conversation
+    // Find the conversation by its ID and check if the current user is a participant
+    const conversation = await Conversation.findOne({
+      _id: id,
+      participants: currentUserId,
+    });
+    if (!conversation) {
+      return response.status(404).json({ error: "Conversation not found" });
+    }
 
-    return response.status(200).json(id);
+    // Return the conversation data if the current user is a participant
+    return response.status(200).json(conversation);
+  } catch (error) {
+    console.log(error);
+    return response.status(400).json({ error: `Error: ${error}` });
+  }
+};
+
+export const updateConversation = async (request, response) => {
+  const currentUserId = request.identify.id;
+  const { id } = request.params;
+  const { name } = request.body;
+  const files = request.files;
+  try {
+    // Find the conversation by its ID and check if the current user is the creator
+    const conversation = await Conversation.findOne({
+      _id: id,
+      creator: currentUserId,
+    });
+    if (!conversation) {
+      return response.status(404).json({ error: "Conversation not found" });
+    }
+
+    // Update the conversation name
+    conversation.name = name;
+
+    if (files.avatar && files.avatar.length > 0) {
+      if (conversation.avatar) {
+        await cloudinary.uploader.destroy(
+          `Mesom/ConversationImage/${
+            conversation.avatar.split("/").pop().split(".")[0]
+          }`
+        );
+      }
+      const avatarResult = await streamUpload(
+        files.avatar[0].buffer,
+        "Mesom/ConversationImage"
+      );
+      conversation.avatar = avatarResult.secure_url;
+    }
+
+    await conversation.save();
+
+    return response.status(200).json(conversation);
+  } catch (error) {
+    console.log(error);
+    return response.status(400).json({ error: `Error: ${error}` });
+  }
+};
+
+export const toggleHideConversation = async (request, response) => {
+  const { id } = request.params;
+  const currentUserId = request.identify.id;
+  try {
+    const conversation = await Conversation.findOne({
+      _id: id,
+      participants: currentUserId,
+    });
+    if (!conversation)
+      return response.status(404).json({ error: "Conversation not found" });
+
+    const isHidden = conversation.hiddenWith.includes(currentUserId);
+    if (isHidden) {
+      conversation.hiddenWith.pull(currentUserId);
+    } else {
+      conversation.hiddenWith.push(currentUserId);
+    }
+    await conversation.save();
+
+    return response
+      .status(200)
+      .json({
+        message: `Conversation ${isHidden ? "Show" : "Hide"} successfully`,
+      });
   } catch (error) {
     console.log(error);
     return response.status(400).json({ error: `Error: ${error}` });

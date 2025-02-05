@@ -7,8 +7,8 @@ import {
   User,
 } from "../db/user.model.js";
 import Notification from "../db/notification.model.js";
+import Setting from "../db/setting.model.js";
 
-import { authentication, random } from "../util/authenticationCrypto.js";
 import streamUpload from "../util/streamUpload.js";
 import checkFollowLimit from "../util/checkFollowLimit.js";
 
@@ -82,7 +82,6 @@ export const updateUser = async (request, response) => {
 
     if (files.avatarImg && files.avatarImg.length > 0) {
       if (user.profile.avatarImg) {
-        // console.log(user.profile.avatarImg.split("/").pop().split(".")[0]);
         await cloudinary.uploader.destroy(
           `Mesom/AvatarImage/${
             user.profile.avatarImg.split("/").pop().split(".")[0]
@@ -104,7 +103,6 @@ export const updateUser = async (request, response) => {
           }`
         );
       }
-
       const coverResult = await streamUpload(
         files.coverImg[0].buffer,
         "Mesom/CoverImage"
@@ -247,8 +245,8 @@ export const toggleBlockUser = async (request, response) => {
 
     return response.status(200).json({
       message: !isBlocked
-        ? ` ${targetUserId} blocked successfully`
-        : `${targetUserId} unblocked successfully`,
+        ? "User blocked successfully"
+        : "User unblocked successfully",
     });
   } catch (error) {
     console.log("Error when block user", error);

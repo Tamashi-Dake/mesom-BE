@@ -6,6 +6,8 @@ import {
   createConversation,
   getConversation,
   getUserConversations,
+  toggleHideConversation,
+  updateConversation,
 } from "../controller/conversation.controller.js";
 
 import upload from "../config/uploadConfig.js";
@@ -23,13 +25,13 @@ export default (router) => {
     getConversation
   );
 
-  // router.patch(
-  //   "/conversation/:id",
-  //   isAuthenticated,
-  //   checkConversationStatus,
-  //   upload.fields({ name: "avatar" }),
-  //   updateConversation
-  // );
+  router.patch(
+    "/conversation/:id",
+    isAuthenticated,
+    checkConversationStatus,
+    upload.fields([{ name: "avatar" }]),
+    updateConversation
+  );
 
   // router.delete(
   //   "/conversation/:id",
@@ -40,11 +42,11 @@ export default (router) => {
 
   // // TODO: update message icon for notification?
 
-  // // interaction routes
-  // router.post(
-  //   "/conversation/:id/hide",
-  //   isAuthenticated,
-  //   checkConversationStatus,
-  //   toggleHideConversation
-  // );
+  // interaction routes
+  router.post(
+    "/conversation/:id/hide",
+    isAuthenticated,
+    checkConversationStatus,
+    toggleHideConversation
+  );
 };
