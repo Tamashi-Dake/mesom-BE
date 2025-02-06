@@ -42,15 +42,18 @@
 
   - [x] Update profile
   - [x] Follow / Unfollow user
-  - [ ] Block / Unblock user
+  - [x] Block / Unblock user
   - [x] View user
   - [x] View Posts of user (user posts, shared posts)
   - [x] View Replies of user (user posts, replies)
   - [x] View Medias of user (user posts with image)
   - [x] View Likes of user (liked posts)
+  - [ ] View Followers/Following of user
+  - [x] Search users by username/display name
 
 - [ ] Settings
 
+  - [ ] View Blocked users of user
   - [x] Route
     - [x] Get settings
     - [x] Update settings
@@ -75,6 +78,8 @@
   - [x] Bookmark post
   - [x] View post
   - [ ] Tags
+  - [ ] Search posts by tags
+  - [ ] Pin post
 
 - [ ] Real-time Message
 
@@ -82,7 +87,7 @@
     - [x] CRU
     - [x] Hide conversation with user
     - [x] Block user
-    - [ ] Search conversation
+    - [x] Search conversation
   - [ ] Message
     - [ ] CRUD
       - [ ] Send Direct Message (If user doesn't blocked and not in group, send message)
@@ -100,8 +105,8 @@
 - [x] Posts / Replies
 - [x] Views
 - [ ] Tags
-- [ ] Conversations
-- [ ] Messages
+- [x] Conversations
+- [x] Messages
 
 #### Middlewares
 
@@ -109,10 +114,8 @@
 - [x] Check User Status (id exists)
 - [x] Check Post Status (id exists)
 - [x] Check Settings before sending notification
-- [ ] Check Owner of Post
 - [ ] Check Premium User
 
 #### More
 
-- [ ] Search (Users, Tags)
 - [ ] Auto taggings images (with Cloudinary)

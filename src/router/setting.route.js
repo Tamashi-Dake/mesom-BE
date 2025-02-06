@@ -15,10 +15,6 @@ export default (router) => {
   router.patch("/settings", isAuthenticated, updateSetting);
   router.patch("/settings/display", isAuthenticated, updateDisplaySetting);
 
-  // // Blocked users
-  // // update blocked users
-  // router.patch("/setting/blocked-users", isAuthenticated, updateBlockedUsers);
-
   // // Notification preferences
 
   // // update blocked types
