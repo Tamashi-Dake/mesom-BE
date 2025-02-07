@@ -12,9 +12,12 @@ export const searchUsers = async (request, response) => {
         { displayName: { $regex: query, $options: "i" } },
       ],
     })
-      .select("username displayName avatar")
+      .select("-bookmarks -pinnedPost")
       .skip(skip)
       .limit(limit);
+    if (!users || users.length === 0) {
+      return response.status(200).json({ message: "No users found" });
+    }
 
     const totalUsers = await User.countDocuments({
       $or: [
@@ -47,9 +50,14 @@ export const searchConversations = async (request, response) => {
       name: { $regex: query, $options: "i" },
       participants: userID,
     })
-      .populate("participants", "avatar")
+      .populate("participants", "displayName username profile.avatarImg")
+      .populate("lastMessage", "text type createdAt ")
       .skip(skip)
       .limit(limit);
+
+    if (!conversations || conversations.length === 0) {
+      return response.status(200).json({ message: "No conversations found" });
+    }
 
     const totalConversations = await Conversation.countDocuments({
       name: { $regex: query, $options: "i" },
