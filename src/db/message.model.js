@@ -12,8 +12,8 @@ const messageSchema = new mongoose.Schema(
       ref: "User",
       required: true,
     },
-    content: { type: String },
-    media: { type: String },
+    text: { type: String },
+    images: [{ type: String }],
     type: {
       type: String,
       enum: ["text", "image", "text_image"],
@@ -28,7 +28,11 @@ const messageSchema = new mongoose.Schema(
         },
       },
     ],
-    isReply: { type: Boolean, default: false },
+    replyTo: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Message",
+      default: null,
+    },
     isDeleted: { type: Boolean, default: false },
     isSeen: { type: Boolean, default: false },
   },

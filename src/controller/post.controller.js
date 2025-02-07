@@ -1,11 +1,12 @@
 import { v2 as cloudinary } from "cloudinary";
-import streamifier from "streamifier";
 
 import { User } from "../db/user.model.js";
 import Post from "../db/post.model.js";
 import Notification from "../db/notification.model.js";
 import View from "../db/view.model.js";
 import { randomDelay } from "../util/delay.js";
+import validatePostData from "../util/validatePostData.js";
+import uploadImagesToCloudinary from "../util/uploadImagesToCloudinary.js";
 
 export const createPost = async (req, res) => {
   const { text } = req.body;
@@ -13,37 +14,22 @@ export const createPost = async (req, res) => {
   const userID = req.identify._id.toString();
 
   try {
-    // Kiểm tra xem bài đăng có văn bản hoặc hình ảnh không
     if (!text && files.length === 0) {
       return res
         .status(400)
         .json({ error: "Please provide text or image in the post" });
     }
-
-    // Kiểm tra số lượng hình ảnh
-    if (files.length > 4) {
-      return res
-        .status(400)
-        .json({ error: "You can upload a maximum of 4 images" });
+    // Kiểm tra dữ liệu đầu vào
+    const validationError = validatePostData(text, files);
+    if (validationError) {
+      return res.status(400).json(validationError);
     }
-    const imageSecureURLs =
-      files.length > 0
-        ? await Promise.all(
-            files.map(
-              (file) =>
-                new Promise((resolve, reject) => {
-                  const uploadStream = cloudinary.uploader.upload_stream(
-                    { folder: "Mesom/PostImage" },
-                    (error, result) => {
-                      if (error) return reject(error);
-                      resolve(result.secure_url);
-                    }
-                  );
-                  streamifier.createReadStream(file.buffer).pipe(uploadStream);
-                })
-            )
-          )
-        : [];
+
+    // Tải ảnh lên Cloudinary
+    const imageSecureURLs = await uploadImagesToCloudinary(
+      files,
+      "Mesom/PostImage"
+    );
 
     // Tạo bài đăng
     const post = await Post.create({
@@ -64,50 +50,19 @@ export const createReplyPost = async (req, res) => {
   const { text, authorName } = req.body;
   const files = req.files;
   const userID = req.identify._id.toString();
-
-  // console.log(text);
-  // console.log(files?.length);
-
   try {
-    // Kiểm tra xem bài đăng có văn bản hoặc hình ảnh không
-    if (!text && files?.length === 0) {
-      return res
-        .status(400)
-        .json({ error: "Please provide text or image in the reply post" });
+    // Kiểm tra dữ liệu đầu vào
+    const validationError = validatePostData(text, files);
+    if (validationError) {
+      return res.status(400).json(validationError);
     }
-
-    // Kiểm tra số lượng hình ảnh
-    if (files?.length > 4) {
-      return res
-        .status(400)
-        .json({ error: "You can upload a maximum of 4 images" });
-    }
-
-    // Kiểm tra bài đăng gốc
     const parentPost = await Post.findById(parentPostID);
-    if (!parentPost) {
-      return res.status(404).json({ error: "Parent post doesn't exist" });
-    }
 
-    // Tải lên hình ảnh nếu có
-    const imageSecureURLs =
-      files?.length > 0
-        ? await Promise.all(
-            files.map(
-              (file) =>
-                new Promise((resolve, reject) => {
-                  const uploadStream = cloudinary.uploader.upload_stream(
-                    { folder: "Mesom/PostImage" },
-                    (error, result) => {
-                      if (error) return reject(error);
-                      resolve(result.secure_url);
-                    }
-                  );
-                  streamifier.createReadStream(file.buffer).pipe(uploadStream);
-                })
-            )
-          )
-        : [];
+    // Tải ảnh lên Cloudinary
+    const imageSecureURLs = await uploadImagesToCloudinary(
+      files,
+      "Mesom/PostImage"
+    );
 
     // Tạo bài trả lời
     const replyPost = await Post.create({
@@ -143,7 +98,7 @@ export const createReplyPost = async (req, res) => {
     });
   } catch (error) {
     console.error(error);
-    return res.status(500).json({ error: `Lỗi: ${error.message || error}` });
+    return res.status(500).json("Can't create reply post");
   }
 };
 

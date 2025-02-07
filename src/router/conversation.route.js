@@ -15,9 +15,7 @@ import upload from "../config/uploadConfig.js";
 export default (router) => {
   router.post("/conversation", isAuthenticated, createConversation);
 
-  // Conversation for pages route
   router.get("/conversations", isAuthenticated, getUserConversations);
-  // post routes
   router.get(
     "/conversation/:id",
     isAuthenticated,

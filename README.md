@@ -89,10 +89,12 @@
     - [x] Block user
     - [x] Search conversation
   - [ ] Message
-    - [ ] CRUD
-      - [ ] Send Direct Message (If user doesn't blocked and not in group, send message)
+    - [x] CR
+      - [x] Send Direct Message (If user isn't in group && user isn't blocked)
+      - [ ] Hide messages from blocked users in group -> Add getBlockedUsers route
+    - [ ] Retrieve message (hide content, delete images)
     - [ ] React to message
-    - [ ] Reply to message
+    - [ ] Reply to message -> Add getMessage/:id route
 
 - [ ] Limit api request (express-rate-limit)
 - [ ] Add cron job to clean up notifications (item is hidden or deleted)
