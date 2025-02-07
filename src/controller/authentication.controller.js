@@ -112,7 +112,10 @@ export const login = async (request, response) => {
       httpOnly: true, // Chỉ cho phép đọc cookie từ phía máy chủ ( tránh XSS attacks )
       secure: process.env.NODE_ENV !== "development", // Chỉ gửi cookie qua HTTPS
       sameSite: process.env.NODE_ENV !== "development" ? "None" : "strict",
-      domain: process.env.NODE_ENV !== "development" ? undefined : "localhost",
+      domain:
+        process.env.NODE_ENV !== "development"
+          ? process.env.COOKIE_DOMAIN
+          : "localhost",
       path: "/",
       maxAge: 1000 * 60 * 60 * 24, // 1 day
     });
