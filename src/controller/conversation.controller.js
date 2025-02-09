@@ -77,7 +77,7 @@ export const getUserConversations = async (request, response) => {
       .sort({ createdAt: -1 })
       .skip(parseInt(skip))
       .limit(parseInt(limit))
-      .populate("participants", "avatar")
+      .populate("participants", "profile.avatarImg")
       .populate("lastMessage", "content type isSeen createdAt");
 
     const totalConversations = await Conversation.countDocuments({
@@ -182,11 +182,9 @@ export const toggleHideConversation = async (request, response) => {
     }
     await conversation.save();
 
-    return response
-      .status(200)
-      .json({
-        message: `Conversation ${isHidden ? "Show" : "Hide"} successfully`,
-      });
+    return response.status(200).json({
+      message: `Conversation ${isHidden ? "Show" : "Hide"} successfully`,
+    });
   } catch (error) {
     console.log(error);
     return response.status(400).json({ error: `Error: ${error}` });

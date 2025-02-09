@@ -415,7 +415,37 @@ export const getUserBookmarks = async (request, response) => {
         .json({ message: "You don't have any bookmarks" });
     }
 
-    const sortedBookmarks = bookmarks
+    // Lọc và cập nhật bookmark: loại bỏ các bookmark với post đã bị xóa
+    const validBookmarks = [];
+    const invalidPostIds = [];
+
+    for (const bookmark of bookmarks) {
+      const post = await Post.findById(bookmark.post).select("id deleted"); // Tìm post tương ứng với bookmark
+      if (post && !post.deleted) {
+        validBookmarks.push(bookmark);
+      } else {
+        invalidPostIds.push(bookmark.post); // Lưu lại các post đã bị xóa hoặc không tồn tại
+      }
+    }
+
+    // Cập nhật lại mảng bookmarks của người dùng: xóa các post không hợp lệ
+    if (invalidPostIds.length > 0) {
+      await User.updateOne(
+        { _id: userId },
+        { $pull: { bookmarks: { post: { $in: invalidPostIds } } } }
+      );
+    }
+
+    const totalValidPosts = validBookmarks.length;
+
+    if (totalValidPosts === 0) {
+      return response
+        .status(200)
+        .json({ message: "All your bookmarks have been deleted or invalid" });
+    }
+
+    // Sắp xếp lại các bookmarks hợp lệ theo thời gian bookmarked
+    const sortedBookmarks = validBookmarks
       .sort((a, b) => b.bookmarkedAt - a.bookmarkedAt)
       .slice(skip, skip + limit);
     const postIds = sortedBookmarks.map((bookmark) => bookmark.post);

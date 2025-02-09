@@ -75,12 +75,17 @@ export const getMessagesInConversation = async (request, response) => {
       });
     }
     const messages = await Message.find({ conversation: conversationId })
-      .sort({ createdAt: -1 })
+      // .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit)
-      .populate("sender", "username avatar")
-      .populate("reactions.user", "username avatar")
+      .populate("sender", "displayName username profile.avatarImg")
+      .populate("reactions.user", "username displayName")
       .populate("replyTo", "text sender");
+    if (!messages || messages.length === 0) {
+      return response.status(200).json({
+        message: "This conversation have no messages.",
+      });
+    }
 
     const totalMessages = await Message.countDocuments({
       conversation: conversationId,
