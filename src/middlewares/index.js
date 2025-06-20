@@ -1,9 +1,7 @@
-import get from "lodash/get.js";
 import merge from "lodash/merge.js";
 import { getUserById, getUserBySessionToken } from "../db/user.model.js";
 import Post from "../db/post.model.js";
 import Setting from "../db/setting.model.js";
-import Conversation from "../db/conversation.model.js";
 
 export const isAuthenticated = async (request, response, next) => {
   try {
@@ -53,34 +51,6 @@ export const checkPostStatus = async (request, response, next) => {
     const post = await Post.findById(id);
     if (!post) {
       return response.status(400).json({ message: "Post does not exist" });
-    }
-
-    // continue to next middleware
-    return next();
-  } catch (error) {
-    console.log(error);
-    return response.status(400).json({ error: `Error: ${error}` });
-  }
-};
-
-// check if conversation is exist
-export const checkConversationStatus = async (request, response, next) => {
-  // get post id from request params
-  const { id } = request.params;
-  try {
-    // check if conversation id is missing
-    if (!id) {
-      return response
-        .status(400)
-        .json({ message: "Conversation ID is missing" });
-    }
-
-    // get conversation by id
-    const post = await Conversation.findById(id);
-    if (!post) {
-      return response
-        .status(400)
-        .json({ message: "Conversation does not exist" });
     }
 
     // continue to next middleware

@@ -1,8 +1,8 @@
 import {
-  checkConversationStatus,
   // checkMessageStatus,
   isAuthenticated,
 } from "../middlewares/index.js";
+import { checkConversationStatus } from "../middlewares/conversation.middleware.js";
 
 import upload from "../config/uploadConfig.js";
 import {
@@ -16,6 +16,7 @@ export default (router) => {
     isAuthenticated,
     checkConversationStatus,
     upload.array("images", 4),
+    // upload.single("image"),
     createMessage
   );
 
