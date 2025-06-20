@@ -1,18 +1,21 @@
 import Conversation from "../db/conversation.model.js";
 import Message from "../db/message.model.js";
 import Setting from "../db/setting.model.js";
+import getMessageType from "../util/getMessageType.js";
 import uploadImagesToCloudinary from "../util/uploadImagesToCloudinary.js";
 import validatePostData from "../util/validatePostData.js";
 
 export const createMessage = async (request, response) => {
   const senderId = request.identify.id;
   const { id: conversationId } = request.params;
-  const { text, type, replyTo } = request.body;
+  const { text, replyTo } = request.body;
   const files = request.files;
+
   try {
     const validationError = validatePostData(text, files);
+    const messageType = getMessageType(text, files);
     if (validationError) {
-      return res.status(400).json(validationError);
+      return response.status(400).json(validationError);
     }
 
     const imageSecureURLs = await uploadImagesToCloudinary(
@@ -30,15 +33,16 @@ export const createMessage = async (request, response) => {
 
     // Check if sender is blocked by recipient
     if (!conversation.isGroup) {
-      const recipientSetting = await Setting.findOne({
-        blockedUser: conversation.participants.filter(
-          (participant) => participant !== senderId
-        )[0],
-      });
-      if (recipientSetting.blockedUser.includes(senderId))
-        return response.status(403).json({
-          message: "You are blocked by the recipient.",
-        });
+      const recipientId = conversation.participants.find(
+        (participant) => participant.toString() !== senderId
+      );
+      if (recipientId) {
+        const recipientSetting = await Setting.findOne({ user: recipientId });
+        if (recipientSetting.blockedUser.includes(senderId))
+          return response.status(403).json({
+            message: "You are blocked by the recipient.",
+          });
+      }
     }
 
     const message = await Message.create({
@@ -46,7 +50,7 @@ export const createMessage = async (request, response) => {
       sender: senderId,
       text,
       images: imageSecureURLs,
-      type,
+      type: messageType,
       replyTo,
     });
 

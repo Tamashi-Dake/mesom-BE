@@ -1,8 +1,5 @@
 import {
-  checkConversationStatus,
-  isAuthenticated,
-} from "../middlewares/index.js";
-import {
+  checkCreateConversationConditions,
   createConversation,
   getConversation,
   getUserConversations,
@@ -10,9 +7,18 @@ import {
   updateConversation,
 } from "../controller/conversation.controller.js";
 
+import { isAuthenticated } from "../middlewares/index.js";
+import { checkConversationStatus } from "../middlewares/conversation.middleware.js";
+
 import upload from "../config/uploadConfig.js";
 
 export default (router) => {
+  router.post(
+    "/conversation/check",
+    isAuthenticated,
+    checkCreateConversationConditions
+  );
+
   router.post("/conversation", isAuthenticated, createConversation);
 
   router.get("/conversations", isAuthenticated, getUserConversations);

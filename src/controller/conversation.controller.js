@@ -3,14 +3,18 @@ import { v2 as cloudinary } from "cloudinary";
 import Conversation from "../db/conversation.model.js";
 import streamUpload from "../util/streamUpload.js";
 
-export const createConversation = async (request, response) => {
-  const { participants, name } = request.body;
+// check conditions before creating a conversation
+export const checkCreateConversationConditions = async (request, response) => {
+  const { participants } = request.body;
   const { id: creatorID, verified } = request.identify;
   try {
+    // Tạo 1 danh sách đầy đủ participants, bao gồm cả creator
+    const allParticipants = [...new Set([...participants, creatorID])].sort();
+    console.log(allParticipants);
     // Check if conversation with the same participants already exists, if true, return it
     const existingConversation = await Conversation.findOne({
-      participants: { $all: [...participants, creatorID] },
-      $expr: { $eq: [{ $size: "$participants" }, participants.length + 1] },
+      participants: { $all: allParticipants },
+      $expr: { $eq: [{ $size: "$participants" }, allParticipants.length] },
     });
     if (existingConversation) {
       return response.status(200).json(existingConversation);
@@ -29,7 +33,7 @@ export const createConversation = async (request, response) => {
       });
     }
     // Check if participants array contains creator
-    if (participants.includes(creatorID)) {
+    if (participants.includes(creatorID) && participants.length > 1) {
       return response.status(400).json({
         message: "Creator should not be included as a participant",
       });
@@ -49,13 +53,28 @@ export const createConversation = async (request, response) => {
       });
     }
 
+    return response.status(200).json({
+      message: "Conditions met, you can create a conversation",
+    });
+  } catch (error) {
+    console.error("Error checking existing conversation:", error);
+    return response.status(500).json({ message: "Internal server error" });
+  }
+};
+
+export const createConversation = async (request, response) => {
+  const { participants, name } = request.body;
+  const { id: creatorID } = request.identify;
+  try {
     const conversation = await Conversation.create({
       name: name,
-      // participants will always include creator
+      // participants will include creator later
       isGroup: participants.length > 1 ? true : false,
       creator: creatorID,
       // include creator in participants
-      participants: [...participants, creatorID],
+      participants: participants.includes(creatorID)
+        ? participants
+        : [...participants, creatorID],
     });
 
     response.status(201).json(conversation);
