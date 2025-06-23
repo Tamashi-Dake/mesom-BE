@@ -14,109 +14,62 @@ import {
   increasePostView,
   toggleBookmarkPost,
   toggleLikePost,
-  toggleSharePost,
-} from "../controller/post.controller.js";
+  toggleSharePost
+} from '../controller/post.controller.js'
 import {
   checkPostStatus,
   checkUserNotificationSettings,
   checkUserStatus,
-  isAuthenticated,
-} from "../middlewares/index.js";
+  isAuthenticated
+} from '../middlewares/index.js'
 
-import upload from "../config/uploadConfig.js";
+import upload from '../config/uploadConfig.js'
 
 export default (router) => {
   // Post for pages route
-  router.get("/posts", isAuthenticated, getAllPosts);
-  router.get("/posts/following", isAuthenticated, getPostsByFollowing);
-  router.get("/posts/bookmarks", isAuthenticated, getUserBookmarks);
+  router.get('/posts', isAuthenticated, getAllPosts)
+  router.get('/posts/following', isAuthenticated, getPostsByFollowing)
+  router.get('/posts/bookmarks', isAuthenticated, getUserBookmarks)
 
   // post routes
   router.get(
-    "/post/:id",
+    '/post/:id',
     isAuthenticated,
     // validateId,
     checkPostStatus,
     getPost
-  );
-  router.post("/post", isAuthenticated, upload.array("images", 4), createPost);
+  )
+  router.post('/post', isAuthenticated, upload.array('images', 4), createPost)
   // router.patch("/post/:id", isAuthenticated,  updatePost);
-  router.delete("/post/:id", isAuthenticated, checkPostStatus, deletePost);
+  router.delete('/post/:id', isAuthenticated, checkPostStatus, deletePost)
 
   // reply routes
-  router.get(
-    "/post/:id/replies",
-    isAuthenticated,
-    checkPostStatus,
-    getRepliesForPost
-  );
+  router.get('/post/:id/replies', isAuthenticated, checkPostStatus, getRepliesForPost)
   router.post(
-    "/post/:id",
+    '/post/:id',
     isAuthenticated,
-    upload.array("images", 4),
+    upload.array('images', 4),
     checkPostStatus,
     // chọc vào Formdata nên PHẢI dùng sau multer
     checkUserNotificationSettings,
     createReplyPost
-  );
+  )
 
   // Post by user routes
-  router.get(
-    "/user/:id/posts",
-    isAuthenticated,
-    checkUserStatus,
-    getPostsByUser
-  );
+  router.get('/user/:id/posts', isAuthenticated, checkUserStatus, getPostsByUser)
 
-  router.get(
-    "/user/:id/replies",
-    isAuthenticated,
-    checkUserStatus,
-    getRepliesByUser
-  );
+  router.get('/user/:id/replies', isAuthenticated, checkUserStatus, getRepliesByUser)
 
-  router.get(
-    "/user/:id/medias",
-    isAuthenticated,
-    checkUserStatus,
-    getMediasByUser
-  );
+  router.get('/user/:id/medias', isAuthenticated, checkUserStatus, getMediasByUser)
 
-  router.get(
-    "/user/:id/likes",
-    isAuthenticated,
-    checkUserStatus,
-    getLikedPostsByUser
-  );
+  router.get('/user/:id/likes', isAuthenticated, checkUserStatus, getLikedPostsByUser)
 
   // interaction routes
-  router.post(
-    "/post/:id/like",
-    isAuthenticated,
-    checkPostStatus,
-    checkUserNotificationSettings,
-    toggleLikePost
-  );
-  router.post(
-    "/post/:id/share",
-    isAuthenticated,
-    checkPostStatus,
-    checkUserNotificationSettings,
-    toggleSharePost
-  );
-  router.post(
-    "/post/:id/bookmark",
-    isAuthenticated,
-    checkPostStatus,
-    toggleBookmarkPost
-  );
-  router.post(
-    "/post/:id/increase-view",
-    isAuthenticated,
-    checkPostStatus,
-    increasePostView
-  );
-};
+  router.post('/post/:id/like', isAuthenticated, checkPostStatus, checkUserNotificationSettings, toggleLikePost)
+  router.post('/post/:id/share', isAuthenticated, checkPostStatus, checkUserNotificationSettings, toggleSharePost)
+  router.post('/post/:id/bookmark', isAuthenticated, checkPostStatus, toggleBookmarkPost)
+  router.post('/post/:id/increase-view', isAuthenticated, checkPostStatus, increasePostView)
+}
 
 // export const validateId = (req, res, next) => {
 //   const { id } = req.params;
