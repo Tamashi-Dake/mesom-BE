@@ -4,38 +4,29 @@ import {
   getConversation,
   getUserConversations,
   toggleHideConversation,
-  updateConversation,
-} from "../controller/conversation.controller.js";
+  updateConversation
+} from '../controller/conversation.controller.js'
 
-import { isAuthenticated } from "../middlewares/index.js";
-import { checkConversationStatus } from "../middlewares/conversation.middleware.js";
+import { isAuthenticated } from '../middlewares/index.js'
+import { checkConversationStatus } from '../middlewares/conversation.middleware.js'
 
-import upload from "../config/uploadConfig.js";
+import upload from '../config/uploadConfig.js'
 
 export default (router) => {
-  router.post(
-    "/conversation/check",
-    isAuthenticated,
-    checkCreateConversationConditions
-  );
+  router.post('/conversation/check', isAuthenticated, checkCreateConversationConditions)
 
-  router.post("/conversation", isAuthenticated, createConversation);
+  router.post('/conversation', isAuthenticated, createConversation)
 
-  router.get("/conversations", isAuthenticated, getUserConversations);
-  router.get(
-    "/conversation/:id",
-    isAuthenticated,
-    checkConversationStatus,
-    getConversation
-  );
+  router.get('/conversations', isAuthenticated, getUserConversations)
+  router.get('/conversation/:id', isAuthenticated, checkConversationStatus, getConversation)
 
   router.patch(
-    "/conversation/:id",
+    '/conversation/:id',
     isAuthenticated,
     checkConversationStatus,
-    upload.fields([{ name: "avatar" }]),
+    upload.fields([{ name: 'avatar' }]),
     updateConversation
-  );
+  )
 
   // router.delete(
   //   "/conversation/:id",
@@ -47,10 +38,5 @@ export default (router) => {
   // // TODO: update message icon for notification?
 
   // interaction routes
-  router.post(
-    "/conversation/:id/hide",
-    isAuthenticated,
-    checkConversationStatus,
-    toggleHideConversation
-  );
-};
+  router.post('/conversation/:id/hide', isAuthenticated, checkConversationStatus, toggleHideConversation)
+}

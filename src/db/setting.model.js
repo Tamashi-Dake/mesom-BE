@@ -1,17 +1,17 @@
-import mongoose from "mongoose";
+import mongoose from 'mongoose'
 
 const settingSchema = new mongoose.Schema(
   {
     user: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
-      required: true,
+      ref: 'User',
+      required: true
     },
     blockedUser: [
       {
         type: mongoose.Schema.Types.ObjectId,
-        ref: "User",
-      },
+        ref: 'User'
+      }
     ],
     notificationPreferences: {
       blockedType: {
@@ -20,36 +20,36 @@ const settingSchema = new mongoose.Schema(
           reply: true,
           like: true,
           follow: true,
-          share: true,
-        },
+          share: true
+        }
       },
       blockedPost: [
         {
           type: mongoose.Schema.Types.ObjectId,
-          ref: "Post",
-        },
+          ref: 'Post'
+        }
       ],
       blockedUser: [
         {
           type: mongoose.Schema.Types.ObjectId,
-          ref: "User",
-        },
-      ],
+          ref: 'User'
+        }
+      ]
     },
     themePreferences: {
       theme: {
         type: String,
-        default: "light",
+        default: 'light'
       },
       accent: {
         type: String,
-        default: "blue",
-      },
-    },
+        default: 'blue'
+      }
+    }
   },
   { timestamps: true }
-);
+)
 
-const Setting = mongoose.model("Setting", settingSchema);
+const Setting = mongoose.model('Setting', settingSchema)
 
-export default Setting;
+export default Setting

@@ -1,46 +1,46 @@
-import mongoose from "mongoose";
+import mongoose from 'mongoose'
 
 const postSchema = new mongoose.Schema(
   {
     author: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
-      required: true,
+      ref: 'User',
+      required: true
     },
     text: { type: String },
     images: [{ type: String }],
     parent: {
       parentPostID: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: "Post",
+        ref: 'Post'
       },
       // TODO: Khi update Username/ display name cần update thêm ở đây
       authorName: {
-        type: String,
-      },
+        type: String
+      }
     },
-    userLikes: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
-    userShared: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
+    userLikes: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+    userShared: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
     userBookmarks: { type: Number },
     userReplies: { type: Number, default: 0 },
     tags: [
       {
         type: mongoose.Schema.Types.ObjectId,
-        ref: "Tag",
-      },
+        ref: 'Tag'
+      }
     ],
     views: {
       type: Number,
-      default: 0,
+      default: 0
     },
     deleted: {
       type: Boolean,
-      default: false,
-    },
+      default: false
+    }
   },
   { timestamps: true }
-);
+)
 
-const Post = mongoose.model("Post", postSchema);
+const Post = mongoose.model('Post', postSchema)
 
-export default Post;
+export default Post

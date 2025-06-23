@@ -1,47 +1,47 @@
-import mongoose from "mongoose";
+import mongoose from 'mongoose'
 
 const notificationSchema = new mongoose.Schema(
   {
     from: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
-      required: true,
+      ref: 'User',
+      required: true
     },
     to: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
-      required: true,
+      ref: 'User',
+      required: true
     },
     type: {
       type: String,
       required: true,
-      enum: ["follow", "like", "reply", "share"],
+      enum: ['follow', 'like', 'reply', 'share']
     },
     post: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "Post",
+      ref: 'Post'
     },
     read: {
       type: Boolean,
-      default: false,
+      default: false
     },
     deleted: {
       type: Boolean,
-      default: false,
+      default: false
     },
     deletedAt: {
-      type: Date,
+      type: Date
     },
     show: {
       type: Boolean,
-      default: true,
-    },
+      default: true
+    }
   },
   { timestamps: true }
-);
+)
 // Tạo index TTL dựa trên trường deletedAt
-notificationSchema.index({ deletedAt: 1 }, { expireAfterSeconds: 60 });
+notificationSchema.index({ deletedAt: 1 }, { expireAfterSeconds: 60 })
 
-const Notification = mongoose.model("Notification", notificationSchema);
+const Notification = mongoose.model('Notification', notificationSchema)
 
-export default Notification;
+export default Notification

@@ -5,9 +5,13 @@
   "description": "",
   "main": "server.js",
   "scripts": {
-    "dev": "nodemon server.js",
-    "start": "node src/server.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "nodemon",
+    "build": "rimraf ./dist && tsc && tsc-alias",
+    "start": "node dist/server.js",
+    "lint": "eslint ./src",
+    "lint:fix": "eslint /src --fix",
+    "prettier": "prettier --check .",
+    "prettier:fix": "prettier --write ."
   },
   "author": "ChinhVN",
   "license": "ISC",
@@ -19,6 +23,7 @@
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
     "lodash": "^4.17.21",
+    "module-alias": "^2.2.3",
     "mongodb": "^6.7.0",
     "mongoose": "^8.4.1",
     "multer": "^1.4.5-lts.1",
@@ -26,6 +31,23 @@
     "streamifier": "^0.1.1"
   },
   "devDependencies": {
-    "nodemon": "^3.1.4"
+    "@eslint/js": "^9.29.0",
+    "@tsconfig/node23": "^23.0.2",
+    "@types/compression": "^1.8.1",
+    "@types/cookie-parser": "^1.4.9",
+    "@types/module-alias": "^2.0.4",
+    "concurrently": "^9.2.0",
+    "eslint": "^9.29.0",
+    "eslint-config-prettier": "^10.1.5",
+    "eslint-plugin-prettier": "^5.5.0",
+    "globals": "^16.2.0",
+    "nodemon": "^3.1.4",
+    "prettier": "^3.6.0",
+    "rimraf": "^6.0.1",
+    "tsc-alias": "^1.8.16",
+    "tsc-watch": "^7.1.1",
+    "tsx": "^4.20.3",
+    "typescript": "^5.8.3",
+    "typescript-eslint": "^8.34.1"
   }
 }

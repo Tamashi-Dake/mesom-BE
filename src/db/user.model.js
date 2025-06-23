@@ -1,99 +1,99 @@
-import mongoose from "mongoose";
+import mongoose from 'mongoose'
 
 // Schema
 const UserSchema = new mongoose.Schema(
   {
     displayName: {
       type: String,
-      default: "",
+      default: ''
     },
     username: {
       type: String,
       required: true,
-      unique: true,
+      unique: true
     },
     authentication: {
       password: {
         type: String,
         required: true,
-        select: false,
+        select: false
       },
       salt: {
         type: String,
-        select: false,
+        select: false
       },
       sessionToken: {
         type: String,
-        select: false,
-      },
+        select: false
+      }
     },
     following: [
       {
         type: mongoose.Schema.Types.ObjectId,
-        ref: "User",
-      },
+        ref: 'User'
+      }
     ],
     followers: [
       {
         type: mongoose.Schema.Types.ObjectId,
-        ref: "User",
-      },
+        ref: 'User'
+      }
     ],
     bookmarks: [
       {
         _id: false,
         post: {
           type: mongoose.Schema.Types.ObjectId,
-          ref: "Post",
+          ref: 'Post'
         },
         bookmarkedAt: {
           type: Date,
-          default: Date.now,
-        },
-      },
+          default: Date.now
+        }
+      }
     ],
     profile: {
       // TODO: Add, update dob
       dob: {
-        type: Date,
+        type: Date
       },
       location: {
-        type: String,
+        type: String
       },
       avatarImg: {
         type: String,
-        default: "",
+        default: ''
       },
       coverImg: {
         type: String,
-        default: "",
+        default: ''
       },
       bio: {
         type: String,
-        default: "",
+        default: ''
       },
       website: {
-        type: String,
-      },
+        type: String
+      }
     },
     verified: {
       type: Boolean,
-      default: false,
+      default: false
     },
     pinnedPost: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "Post",
+      ref: 'Post'
     },
     status: {
       type: String,
-      enum: ["active", "inactive"],
-      default: "active",
-    },
+      enum: ['active', 'inactive'],
+      default: 'active'
+    }
   },
   { timestamps: true }
-);
+)
 
-export const User = mongoose.model("User", UserSchema);
+export const User = mongoose.model('User', UserSchema)
 
 // Action
 
@@ -102,28 +102,28 @@ export const User = mongoose.model("User", UserSchema);
 // };
 
 export const getUserById = (id) => {
-  return User.findById(id);
-};
+  return User.findById(id)
+}
 
 export const getUserByUsername = (username) => {
-  return User.findOne({ username });
-};
+  return User.findOne({ username })
+}
 
 export const getUserBySessionToken = (sessionToken) => {
   return User.findOne({
-    "authentication.sessionToken": sessionToken,
-  });
-};
+    'authentication.sessionToken': sessionToken
+  })
+}
 
 // Create
 export const createUser = (data) => {
-  return new User(data).save();
-};
+  return new User(data).save()
+}
 
 // Delete
 export const deleteUserById = (id) => {
-  return User.findByIdAndDelete({ _id: id });
-};
+  return User.findByIdAndDelete({ _id: id })
+}
 
 // Update
 // export const updateUser = (id, data) => {
