@@ -89,6 +89,7 @@
     - [x] Block user
     - [x] Search conversation
   - [ ] Message
+    - [x] Add socket
     - [x] CR
       - [x] Send Direct Message (If user isn't in group && user isn't blocked)
       - [ ] Hide messages from blocked users in group -> Add getBlockedUsers route
