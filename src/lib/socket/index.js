@@ -1,5 +1,6 @@
 import { Server } from 'socket.io'
-import { joinConversationHandler } from './handler/conversation.handler.js'
+import { joinConversationHandler, leaveConversationHandler, newMessageHandler } from './handler/conversation.handler.js'
+import { userLoginHandler } from './handler/user.handler.js'
 
 const setupSocket = (server) => {
   const io = new Server(server, {
@@ -13,7 +14,10 @@ const setupSocket = (server) => {
     console.log('🟢 New socket connected:', socket.id)
 
     // Đăng ký từng nhóm handler riêng
+    userLoginHandler(socket)
     joinConversationHandler(socket)
+    leaveConversationHandler(socket)
+    newMessageHandler(io, socket)
 
     socket.on('disconnect', () => {
       console.log('🔴 Disconnected:', socket.id)
