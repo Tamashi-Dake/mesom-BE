@@ -1,13 +1,19 @@
 import { v2 as cloudinary } from 'cloudinary'
 
 import Conversation from '../db/conversation.model.js'
+import { getUserById } from '../db/user.model.js'
 import streamUpload from '../util/streamUpload.js'
 
 // check conditions before creating a conversation
 export const checkCreateConversationConditions = async (request, response) => {
   const { participants } = request.body
-  const { id: creatorID, verified } = request.identify
+  const creatorID = request.identify.userId
   try {
+    const creator = await getUserById(creatorID)
+    if (!creator) {
+      return response.status(404).json({ message: 'Creator not found' })
+    }
+    const verified = creator.verified
     // Tạo 1 danh sách đầy đủ participants, bao gồm cả creator
     const allParticipants = [...new Set([...participants, creatorID])].sort()
     console.log(allParticipants)
@@ -62,7 +68,7 @@ export const checkCreateConversationConditions = async (request, response) => {
 
 export const createConversation = async (request, response) => {
   const { participants, name } = request.body
-  const { id: creatorID } = request.identify
+  const creatorID = request.identify.userId
   try {
     const conversation = await Conversation.create({
       name: name,
@@ -80,7 +86,7 @@ export const createConversation = async (request, response) => {
 }
 
 export const getUserConversations = async (request, response) => {
-  const userID = request.identify.id
+  const userID = request.identify.userId
   const limit = parseInt(request.query.limit) || 10
   const skip = parseInt(request.query.skip)
   try {
@@ -117,7 +123,7 @@ export const getUserConversations = async (request, response) => {
 
 export const getConversation = async (request, response) => {
   const { id } = request.params
-  const currentUserId = request.identify.id
+  const currentUserId = request.identify.userId
   try {
     // Find the conversation by its ID and check if the current user is a participant
     const conversation = await Conversation.findOne({
@@ -137,7 +143,7 @@ export const getConversation = async (request, response) => {
 }
 
 export const updateConversation = async (request, response) => {
-  const currentUserId = request.identify.id
+  const currentUserId = request.identify.userId
   const { id } = request.params
   const { name } = request.body
   const files = request.files
@@ -175,7 +181,7 @@ export const updateConversation = async (request, response) => {
 
 export const toggleHideConversation = async (request, response) => {
   const { id } = request.params
-  const currentUserId = request.identify.id
+  const currentUserId = request.identify.userId
   try {
     const conversation = await Conversation.findOne({
       _id: id,

@@ -13,17 +13,14 @@ const UserSchema = new mongoose.Schema(
       unique: true
     },
     authentication: {
-      password: {
+      passwordHash: {
         type: String,
         required: true,
         select: false
       },
-      salt: {
+      refreshTokenHash: {
         type: String,
-        select: false
-      },
-      sessionToken: {
-        type: String,
+        default: null,
         select: false
       }
     },
@@ -107,12 +104,6 @@ export const getUserById = (id) => {
 
 export const getUserByUsername = (username) => {
   return User.findOne({ username })
-}
-
-export const getUserBySessionToken = (sessionToken) => {
-  return User.findOne({
-    'authentication.sessionToken': sessionToken
-  })
 }
 
 // Create

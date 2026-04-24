@@ -1,7 +1,7 @@
 import Notification from '../db/notification.model.js'
 
 export const getUserNotifications = async (request, response) => {
-  const userId = request.identify._id.toString()
+  const userId = request.identify.userId
   const limit = parseInt(request.query.limit) || 10
   const skip = parseInt(request.query.skip)
   try {
@@ -46,7 +46,7 @@ export const getUserNotifications = async (request, response) => {
 }
 
 export const getUserMentions = async (request, response) => {
-  const userId = request.identify._id.toString()
+  const userId = request.identify.userId
   const limit = parseInt(request.query.limit) || 10
   const skip = parseInt(request.query.skip)
   try {
@@ -94,7 +94,7 @@ export const getUserMentions = async (request, response) => {
 }
 
 export const toggleReadNotification = async (request, response) => {
-  const userId = request.identify._id.toString()
+  const userId = request.identify.userId
   const notificationId = request.params.id
   try {
     const notification = await Notification.findOne({
@@ -123,7 +123,7 @@ export const toggleReadNotification = async (request, response) => {
 }
 
 export const markAllNotificationsAsRead = async (request, response) => {
-  const userId = request.identify._id.toString()
+  const userId = request.identify.userId
   try {
     const notifications = await Notification.updateMany({ to: userId }, { read: true }, { multi: true })
     return response.status(200).json({ notifications, message: `All notifications marked as read` })
@@ -134,7 +134,7 @@ export const markAllNotificationsAsRead = async (request, response) => {
 }
 
 export const deleteNotification = async (request, response) => {
-  const userId = request.identify._id.toString()
+  const userId = request.identify.userId
   const notificationId = request.params.id
   try {
     const notification = await Notification.findOne({
@@ -167,7 +167,7 @@ export const deleteNotification = async (request, response) => {
 }
 
 export const deleteAllNotifications = async (request, response) => {
-  const userId = request.identify._id.toString()
+  const userId = request.identify.userId
   try {
     // Update all notifications to set deleted = true and deletedAt to current date and time
     await Notification.updateMany(

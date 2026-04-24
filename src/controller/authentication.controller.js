@@ -1,47 +1,45 @@
 import Setting from '../db/setting.model.js'
-import { createUser, getUserByUsername, getUserBySessionToken } from '../db/user.model.js'
-import { authentication, random } from '../util/authenticationCrypto.js'
+import { createUser, getUserById, getUserByUsername } from '../db/user.model.js'
+import { hashPassword, comparePassword } from '../util/authenticationCrypto.js'
+import { clearAuthCookies, setAccessCookie, setRefreshCookie } from '../util/cookieHelper.js'
+import { hashToken, signAccessToken, signRefreshToken, verifyRefreshToken } from '../util/jwt.js'
 import validatePassword from '../util/validatePassword.js'
+
+const issueTokens = async (user) => {
+  const userId = user._id.toString()
+  const role = user.role ?? 'user'
+  const accessToken = signAccessToken({ userId, role })
+  const refreshToken = signRefreshToken({ userId })
+  user.authentication.refreshTokenHash = hashToken(refreshToken)
+  await user.save()
+  return { accessToken, refreshToken }
+}
 
 export const register = async (request, response) => {
   try {
-    // Get username and password from request body
     const { username, password, confirmPassword } = request.body
 
-    // Check if username or password is missing
     if (!username || !password) {
       return response.status(400).json({ error: true, message: 'Missing username or password' })
     }
 
-    // Check if user already exists
     const existingUser = await getUserByUsername(username)
     if (existingUser) {
       return response.status(400).json({ error: true, message: 'User already exists' })
     }
 
     const validationError = validatePassword(password, confirmPassword)
-
     if (validationError) {
       return response.status(400).json(validationError)
     }
 
-    // Generate salt
-    const salt = random()
-
-    // Create user
+    const passwordHash = await hashPassword(password)
     const user = await createUser({
       username,
-      authentication: {
-        salt,
-        password: authentication(salt, password)
-      }
+      authentication: { passwordHash }
     })
 
-    // Create user settings
-    const userSettings = await Setting.create({
-      user: user._id.toString()
-    })
-
+    const userSettings = await Setting.create({ user: user._id.toString() })
     await userSettings.save()
 
     return response.status(200).json({
@@ -54,57 +52,47 @@ export const register = async (request, response) => {
     })
   } catch (error) {
     console.log(error)
-    return response.status(400).json({ error: `Error registering user` })
+    return response.status(400).json({ error: true, message: 'Error registering user' })
   }
 }
 
 export const login = async (request, response) => {
   try {
-    // get username and password from request body
     const { username, password } = request.body
 
-    // check if username or password is missing
     if (!username || !password) {
       return response.status(400).json({ error: true, message: 'Missing username or password' })
     }
 
-    // check if user exists and get user authentication details
     const user = await getUserByUsername(username).select(
-      '+authentication.salt +authentication.password -bookmarks -profile -following -followers'
+      '+authentication.passwordHash +authentication.refreshTokenHash'
     )
 
     if (!user) {
       return response.status(404).json({ error: true, message: 'Login: User does not exist' })
     }
 
-    // check if password is correct
-    const expectedHash = authentication(user.authentication.salt, password)
-    if (expectedHash !== user.authentication.password) {
+    if (!user.authentication?.passwordHash) {
+      return response
+        .status(409)
+        .json({ error: true, message: 'Account uses legacy credentials. Please reset your password.' })
+    }
+
+    const ok = await comparePassword(password, user.authentication.passwordHash)
+    if (!ok) {
       return response.status(403).json({ error: true, message: 'Invalid password' })
     }
 
-    // generate session token
-    const salt = random()
-    user.authentication.sessionToken = authentication(salt, user._id.toString())
+    const { accessToken, refreshToken } = await issueTokens(user)
 
-    // save session token
-    await user.save()
+    setAccessCookie(response, accessToken)
+    setRefreshCookie(response, refreshToken)
 
-    // set cookie
-    response.cookie('mesom-auth', user.authentication.sessionToken, {
-      httpOnly: true, // Chỉ cho phép đọc cookie từ phía máy chủ ( tránh XSS attacks )
-      secure: process.env.NODE_ENV !== 'development', // Chỉ gửi cookie qua HTTPS
-      sameSite: process.env.NODE_ENV !== 'development' ? 'None' : 'strict',
-      // domain:
-      //   process.env.NODE_ENV !== "development"
-      //     ? process.env.COOKIE_DOMAIN
-      //     : "localhost",
-      path: '/',
-      maxAge: 1000 * 60 * 60 * 24 // 1 day
-    })
+    // Strip sensitive fields from response payload
+    user.authentication.passwordHash = undefined
+    user.authentication.refreshTokenHash = undefined
 
-    // return user
-    return response.status(200).json(user).end()
+    return response.status(200).json(user)
   } catch (error) {
     console.log(error)
     return response.status(400).json({ error: true, message: 'Error' })
@@ -113,34 +101,20 @@ export const login = async (request, response) => {
 
 export const logout = async (request, response) => {
   try {
-    const sessionToken = request.cookies['mesom-auth']
-
-    // Kiểm tra xem sessionToken có tồn tại hay không
-    if (!sessionToken) {
-      return response.status(400).json({ error: true, message: 'No session token found' })
+    const token = request.cookies['mesom-refresh']
+    if (token) {
+      try {
+        const { userId } = verifyRefreshToken(token)
+        const user = await getUserById(userId).select('+authentication.refreshTokenHash')
+        if (user) {
+          user.authentication.refreshTokenHash = null
+          await user.save()
+        }
+      } catch {
+        // token đã hết hạn hoặc không hợp lệ — tiếp tục clear cookie
+      }
     }
-
-    // Tìm người dùng theo session token
-    const user = await getUserBySessionToken(sessionToken)
-
-    if (!user) {
-      return response.status(400).json({ error: true, message: 'User not found' })
-    }
-
-    // Xóa session token
-    user.authentication.sessionToken = null
-
-    // Lưu thay đổi
-    await user.save()
-
-    // Xóa cookie
-    response.cookie('mesom-auth', '', {
-      domain: process.env.COOKIE_DOMAIN || 'localhost',
-      path: '/',
-      maxAge: 0 // Cookie sẽ hết hạn ngay lập tức
-    })
-
-    // Trả về phản hồi thành công
+    clearAuthCookies(response)
     return response.status(200).json({ message: 'Logged out successfully' })
   } catch (error) {
     console.log(error)
@@ -148,80 +122,87 @@ export const logout = async (request, response) => {
   }
 }
 
+export const refresh = async (request, response) => {
+  const token = request.cookies['mesom-refresh']
+  if (!token) {
+    return response.status(401).json({ error: true, message: 'No refresh token' })
+  }
+  try {
+    const { userId } = verifyRefreshToken(token)
+    const user = await getUserById(userId).select('+authentication.refreshTokenHash')
+
+    if (!user || user.authentication.refreshTokenHash !== hashToken(token)) {
+      if (user) {
+        user.authentication.refreshTokenHash = null
+        await user.save()
+      }
+      clearAuthCookies(response)
+      return response.status(401).json({ error: true, message: 'Token reuse detected' })
+    }
+
+    const { accessToken, refreshToken } = await issueTokens(user)
+
+    setAccessCookie(response, accessToken)
+    setRefreshCookie(response, refreshToken)
+
+    user.authentication.refreshTokenHash = undefined
+
+    return response.status(200).json(user)
+  } catch {
+    clearAuthCookies(response)
+    return response.status(401).json({ error: true, message: 'Refresh token invalid or expired' })
+  }
+}
+
 export const getCurrentUser = async (request, response) => {
   try {
-    // get session token from request cookies
-    const sessionToken = request.cookies['mesom-auth']
-
-    // check if session token is missing
-    if (!sessionToken) {
-      return response.status(401).json({ error: true, message: 'Unauthorized' })
+    const user = await getUserById(request.identify.userId)
+    if (!user) {
+      return response.status(404).json({ error: true, message: 'User not found' })
     }
-
-    // get current user by session token
-    const currentUser = await getUserBySessionToken(sessionToken)
-    if (!currentUser) {
-      return response.status(400).json({ error: true, message: 'Auth: User does not exist' })
-    }
-
-    // return current user
-    return response.status(200).json(currentUser)
+    return response.status(200).json(user)
   } catch (error) {
     console.log(error)
-    return response.status(400).json({ error: 'Error getting current user' })
+    return response.status(400).json({ error: true, message: 'Error getting current user' })
   }
 }
 
 export const updatePassword = async (request, response) => {
-  const { username } = request.identify
-
-  let { oldPassword, newPassword, confirmPassword } = request.body
+  const { userId } = request.identify
+  const { oldPassword, newPassword, confirmPassword } = request.body
   try {
-    // check if user exists and get user authentication details
-    const user = await getUserByUsername(username).select('+authentication.salt +authentication.password')
+    if (!oldPassword || !newPassword || !confirmPassword) {
+      return response.status(400).json({ error: 'Please fill in all the fields' })
+    }
 
+    const user = await getUserById(userId).select('+authentication.passwordHash +authentication.refreshTokenHash')
     if (!user) {
       return response.status(404).json({ error: true, message: 'User does not exist' })
     }
 
-    // Check if oldPassword, newPassword, confirmPassword is missing
-    if (!oldPassword || !newPassword || !confirmPassword) {
-      return response.status(400).json({
-        error: 'Please fill in all the fields'
-      })
-    }
-
-    // Check if oldPassword is correct
-    const oldPasswordHash = authentication(user.authentication.salt, oldPassword)
-    if (oldPasswordHash !== user.authentication.password) {
+    const oldOk = await comparePassword(oldPassword, user.authentication.passwordHash)
+    if (!oldOk) {
       return response.status(403).json({ error: 'Your password is incorrect' })
     }
 
-    // Check if newPassword is same as oldPassword
-    const newPasswordHash = authentication(user.authentication.salt, newPassword)
-    if (newPasswordHash === user.authentication.password) {
-      return response.status(400).json({
-        error: 'New password cannot be same as old password'
-      })
+    const sameAsOld = await comparePassword(newPassword, user.authentication.passwordHash)
+    if (sameAsOld) {
+      return response.status(400).json({ error: 'New password cannot be same as old password' })
     }
 
     const validationError = validatePassword(newPassword, confirmPassword)
-
     if (validationError) {
       return response.status(400).json(validationError)
     }
 
-    // Update password
-    const newSalt = random()
-    user.authentication.salt = newSalt
-
-    user.authentication.password = authentication(newSalt, newPassword)
+    user.authentication.passwordHash = await hashPassword(newPassword)
+    user.authentication.refreshTokenHash = null
     await user.save()
-    return response.status(200).json({
-      message: 'Password updated successfully'
-    })
+
+    clearAuthCookies(response)
+    return response.status(200).json({ message: 'Password updated successfully. Please log in again.' })
   } catch (error) {
     console.log('Error in updatePassword', error)
-    return response.sendStatus(500).json({ error: `Error: ${error}` })
+    return response.status(500).json({ error: `Error: ${error}` })
   }
 }

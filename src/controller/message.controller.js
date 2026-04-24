@@ -6,7 +6,7 @@ import uploadImagesToCloudinary from '../util/uploadImagesToCloudinary.js'
 import validatePostData from '../util/validatePostData.js'
 
 export const createMessage = async (request, response) => {
-  const senderId = request.identify.id
+  const senderId = request.identify.userId
   const { id: conversationId } = request.params
   const { text, replyTo } = request.body
   const files = request.files
@@ -63,7 +63,7 @@ export const createMessage = async (request, response) => {
 
 export const getMessagesInConversation = async (request, response) => {
   const { id: conversationId } = request.params
-  const currentUserId = request.identify.id
+  const currentUserId = request.identify.userId
   const limit = parseInt(request.query.limit) || 10
   const skip = parseInt(request.query.skip) || 0
 

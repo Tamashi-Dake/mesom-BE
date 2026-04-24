@@ -1,9 +1,5 @@
-import crypto from 'crypto'
+import bcrypt from 'bcryptjs'
 
-export const random = () => {
-  return crypto.randomBytes(128).toString('base64')
-}
+export const hashPassword = (password) => bcrypt.hash(password, 12)
 
-export const authentication = (salt, password) => {
-  return crypto.createHmac('sha256', [salt, password].join('/')).update(process.env.SECRET_KEY).digest('hex')
-}
+export const comparePassword = (password, hash) => bcrypt.compare(password, hash)

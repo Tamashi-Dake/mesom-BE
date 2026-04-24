@@ -1,34 +1,30 @@
-import merge from 'lodash/merge.js'
-import { getUserById, getUserBySessionToken } from '../db/user.model.js'
+import mongoose from 'mongoose'
+import { getUserById } from '../db/user.model.js'
 import Post from '../db/post.model.js'
 import Setting from '../db/setting.model.js'
+import { verifyAccessToken } from '../util/jwt.js'
 
-export const isAuthenticated = async (request, response, next) => {
-  try {
-    // get session token from request cookies
-    const sessionToken = request.cookies['mesom-auth']
+const getAllowedOrigin = () =>
+  process.env.NODE_ENV === 'production' ? process.env.PROD_FRONTEND_URL : process.env.DEV_FRONTEND_URL
 
-    // check if session token is missing
-    if (!sessionToken) {
-      return response.status(401).json({ error: true, message: 'Unauthorized' })
-    }
-
-    // get user by session token
-    const user = await getUserBySessionToken(sessionToken)
-    if (!user) {
-      return response.status(400).json({ error: true, message: 'Session token does not exist' })
-    }
-
-    // merge user to request
-    merge(request, { identify: user })
-    // console.log(request.identify);
-
-    // continue to next middleware
-    return next()
-  } catch (error) {
-    console.log(error)
-    return response.status(400).json({ error: true, message: `Error: ${error}` })
+export const isAuthenticated = (request, response, next) => {
+  const token = request.cookies['mesom-access']
+  if (!token) {
+    return response.status(401).json({ error: true, message: 'Unauthorized' })
   }
+  try {
+    request.identify = verifyAccessToken(token)
+    return next()
+  } catch {
+    return response.status(401).json({ error: true, message: 'Token invalid or expired' })
+  }
+}
+
+export const validateOrigin = (request, response, next) => {
+  if (request.headers.origin !== getAllowedOrigin()) {
+    return response.status(403).json({ error: true, message: 'Forbidden origin' })
+  }
+  return next()
 }
 
 // check if post is exist

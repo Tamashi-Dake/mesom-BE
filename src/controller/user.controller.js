@@ -33,7 +33,7 @@ export const getUserFromUsername = async (request, response) => {
 
 export const deleteUser = async (request, response) => {
   try {
-    const id = request.identify._id.toString()
+    const id = request.identify.userId
     const user = await deleteUserById(id)
     return response.status(200).json({
       message: `User with id ${id} deleted`
@@ -56,7 +56,7 @@ export const deleteUser = async (request, response) => {
 // user.username = username;
 //  username,
 export const updateUser = async (request, response) => {
-  const id = request.identify._id.toString()
+  const id = request.identify.userId
   const { displayName, bio, location, website } = request.body
   const files = request.files
   try {
@@ -97,7 +97,7 @@ export const updateUser = async (request, response) => {
 
 export const toggleFollowUser = async (request, response) => {
   const { id: targetUserId } = request.params
-  const currentUserId = request.identify._id.toString()
+  const currentUserId = request.identify.userId
   try {
     // get current user and target user
     const currentUser = await getUserById(currentUserId)
@@ -175,7 +175,7 @@ export const toggleFollowUser = async (request, response) => {
 
 export const toggleBlockUser = async (request, response) => {
   const { id: targetUserId } = request.params
-  const currentUserId = request.identify._id.toString()
+  const currentUserId = request.identify.userId
   try {
     const userSetting = await Setting.findOne({ user: currentUserId }).select('blockedUser')
     if (!userSetting) {
@@ -212,7 +212,7 @@ export const toggleBlockUser = async (request, response) => {
 }
 
 export const getSuggestedUsers = async (request, response) => {
-  const userId = request.identify._id
+  const userId = request.identify.userId
   try {
     // // Lấy danh sách người dùng mà người dùng hiện tại đang theo dõi
     const userFollowedByCurrentUser = await getUserById(userId).select('following').lean()
@@ -235,9 +235,8 @@ export const getSuggestedUsers = async (request, response) => {
       },
       {
         $project: {
-          'authentication.password': 0,
-          'authentication.salt': 0,
-          'authentication.sessionToken': 0
+          'authentication.passwordHash': 0,
+          'authentication.refreshTokenHash': 0
         }
       },
       { $sample: { size: 10 } }
@@ -245,7 +244,7 @@ export const getSuggestedUsers = async (request, response) => {
 
     const admin = await User.findOne()
       .sort({ createdAt: 1 })
-      .select('-authentication.password -authentication.salt -authentication.sessionToken')
+      .select('-authentication.passwordHash -authentication.refreshTokenHash')
 
     // Lọc ra 2 người dùng ngẫu nhiên từ danh sách đã lấy
     const suggestedUsers = users

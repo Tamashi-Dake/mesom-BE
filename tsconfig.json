@@ -11,6 +11,8 @@
     "strict": true,
     "skipLibCheck": true,
     "resolveJsonModule": true,
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
     "outDir": "dist",
     "baseUrl": ".", // Đường dẫn base cho các import
     "paths": {

@@ -11,7 +11,7 @@ import uploadImagesToCloudinary from '../util/uploadImagesToCloudinary.js'
 export const createPost = async (req, res) => {
   const { text } = req.body
   const files = req.files
-  const userID = req.identify._id.toString()
+  const userID = req.identify.userId
 
   try {
     if (!text && files.length === 0) {
@@ -44,7 +44,7 @@ export const createReplyPost = async (req, res) => {
   const { id: parentPostID } = req.params
   const { text, authorName } = req.body
   const files = req.files
-  const userID = req.identify._id.toString()
+  const userID = req.identify.userId
   try {
     // Kiểm tra dữ liệu đầu vào
     const validationError = validatePostData(text, files)
@@ -134,7 +134,7 @@ export const getAllPosts = async (request, response) => {
 }
 
 export const getPostsByFollowing = async (request, response) => {
-  const userId = request.identify._id.toString()
+  const userId = request.identify.userId
   const limit = parseInt(request.query.limit) || 10
   const skip = parseInt(request.query.skip)
   try {
@@ -369,7 +369,7 @@ export const getLikedPostsByUser = async (request, response) => {
 }
 
 export const getUserBookmarks = async (request, response) => {
-  const userId = request.identify._id.toString()
+  const userId = request.identify.userId
   const limit = parseInt(request.query.limit) || 10
   const skip = parseInt(request.query.skip) || 0
   try {
@@ -513,7 +513,7 @@ export const updatePost = async (request, response) => {
 
 export const deletePost = async (request, response) => {
   const { id: postID } = request.params
-  const userID = request.identify._id.toString()
+  const userID = request.identify.userId
 
   try {
     // Check if the post exists
@@ -558,7 +558,7 @@ export const deletePost = async (request, response) => {
 
 export const toggleLikePost = async (request, response) => {
   const { id: postID } = request.params
-  const userID = request.identify._id.toString()
+  const userID = request.identify.userId
   try {
     // Check if the post exists
     const post = await Post.findById(postID)
@@ -618,7 +618,7 @@ export const toggleLikePost = async (request, response) => {
 
 export const toggleSharePost = async (request, response) => {
   const { id: postID } = request.params
-  const userID = request.identify._id.toString()
+  const userID = request.identify.userId
   try {
     // Check if the  post exists
     const post = await Post.findById(postID)
@@ -679,7 +679,7 @@ export const toggleSharePost = async (request, response) => {
 
 export const toggleBookmarkPost = async (request, response) => {
   const { id: postID } = request.params
-  const userID = request.identify._id.toString()
+  const userID = request.identify.userId
   try {
     // Check if the user / post exists
     const user = await User.findById(userID)
@@ -734,7 +734,7 @@ export const toggleBookmarkPost = async (request, response) => {
 
 export const increasePostView = async (request, response) => {
   const { id: postID } = request.params
-  const userID = request.identify._id.toString()
+  const userID = request.identify.userId
   try {
     //TODO: If increase view is okay in produciton then remove delay
     await randomDelay(500, 1500)

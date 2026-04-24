@@ -1,7 +1,7 @@
 import Setting from '../db/setting.model.js'
 
 export const getSetting = async (request, response) => {
-  const userId = request.identify._id.toString()
+  const userId = request.identify.userId
   try {
     const setting = await Setting.findOne({
       user: userId
@@ -16,7 +16,7 @@ export const getSetting = async (request, response) => {
 }
 
 export const getDisplaySetting = async (request, response) => {
-  const userId = request.identify._id.toString()
+  const userId = request.identify.userId
 
   try {
     const userSetting = await Setting.findOne({ user: userId }).select('themePreferences')
@@ -36,7 +36,7 @@ export const getDisplaySetting = async (request, response) => {
 }
 
 export const updateSetting = async (request, response) => {
-  const userId = request.identify._id.toString()
+  const userId = request.identify.userId
   const { setting } = request.body
 
   try {
@@ -82,7 +82,7 @@ export const updateSetting = async (request, response) => {
 }
 
 export const updateDisplaySetting = async (request, response) => {
-  const userId = request.identify._id.toString()
+  const userId = request.identify.userId
 
   const { theme, accent } = request.body
 

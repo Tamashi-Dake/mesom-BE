@@ -5,7 +5,6 @@
 #### Features
 
 - [ ] Authentication
-
   - [x] Register
   - [x] Login
   - [x] Login with Google
@@ -16,21 +15,18 @@
   - [x] Change password
   - [ ] Change email
   - [ ] Delete account (might use soft delete)
-
     - [ ] delete user settings
     - [ ] casade delete related posts
     - [ ] casade delete related notifications
 
 - [x] Suggested users (except followed users, based on friends of friends ) (need to check again when create more users)
 - [ ] Notifications ( read/unread, soft delete, toggle setting for each type of notification )
-
   - [x] Create notification (follow, like, reply, share)
   - [x] Check user settings before sending notification (follow, like, reply, share)
   - [x] Read notification
     - [x] Mark notification as read
     - [x] Mark all notifications as read
   - [x] Delete notification
-
     - [x] Mark notification as deleted
     - [x] Mark all notifications as deleted
     - [x] Set TTL for notification
@@ -39,7 +35,6 @@
   - [ ] Debounce notifications to prevent spam
 
 - [ ] User
-
   - [x] Update profile
   - [x] Follow / Unfollow user
   - [x] Block / Unblock user
@@ -52,7 +47,6 @@
   - [x] Search users by username/display name
 
 - [ ] Settings
-
   - [ ] View Blocked users of user
   - [x] Route
     - [x] Get settings
@@ -66,7 +60,6 @@
     - [x] Change accent color
 
 - [ ] Posts ( preview image (use URL.createObjectURL))
-
   - [x] Create post
   - [x] Read post
   - [x] Read all posts (pagination)
@@ -82,7 +75,6 @@
   - [ ] Pin post
 
 - [ ] Real-time Message
-
   - [x] Conversation
     - [x] CRU
     - [x] Hide conversation with user
@@ -122,3 +114,4 @@
 #### More
 
 - [ ] Auto taggings images (with Cloudinary)
+- [ ] Recommendation system/personalization timeline (based on user interactions, content-based filtering, collaborative filtering)

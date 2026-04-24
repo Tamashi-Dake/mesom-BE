@@ -35,7 +35,7 @@ export const searchUsers = async (request, response) => {
 }
 
 export const searchConversations = async (request, response) => {
-  const userID = request.identify.id
+  const userID = request.identify.userId
   const { query } = request.query
   const limit = parseInt(request.query.limit) || 10
   const skip = parseInt(request.query.skip)
