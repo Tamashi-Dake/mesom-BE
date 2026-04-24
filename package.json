@@ -53,6 +53,8 @@
     "@eslint/js": "^9.29.0",
     "@nestjs/cli": "^11.0.21",
     "@nestjs/testing": "^11.1.19",
+    "@swc-node/register": "^1.11.1",
+    "@swc/core": "^1.15.30",
     "@tsconfig/node23": "^23.0.2",
     "@types/bcryptjs": "^2.4.6",
     "@types/compression": "^1.8.1",

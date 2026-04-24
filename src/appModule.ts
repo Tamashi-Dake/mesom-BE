@@ -2,6 +2,9 @@ import { Module } from '@nestjs/common'
 import { ConfigModule, ConfigService } from '@nestjs/config'
 import { MongooseModule } from '@nestjs/mongoose'
 
+import { AuthModule } from './modules/auth/authModule.js'
+import { UserModule } from './modules/user/userModule.js'
+
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
@@ -13,7 +16,9 @@ import { MongooseModule } from '@nestjs/mongoose'
             ? config.get<string>('MONGO_PROD_URI')
             : config.get<string>('MONGO_URI')
       })
-    })
+    }),
+    UserModule,
+    AuthModule
   ]
 })
 export class AppModule {}

@@ -14,10 +14,17 @@ import legacyApp from './legacyApp.js'
 import corsOptions from './config/corsOptions.js'
 import './config/cloudinary.js'
 import setupSocket from './lib/socket/index.js'
+import connectMongoDB from './db/connectMongoDB.js'
 import { HttpExceptionFilter } from './common/filters/httpExceptionFilter.js'
 import { TransformInterceptor } from './common/interceptors/transformInterceptor.js'
 
 async function bootstrap() {
+  // Connect legacy mongoose singleton before Nest spins up so legacy `.model.js`
+  // files have an open connection. @nestjs/mongoose shares the same default
+  // connection, so this is idempotent. Removed once the last legacy model is
+  // migrated (Phase 3).
+  await connectMongoDB()
+
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     bufferLogs: true
   })
