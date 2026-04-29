@@ -6,23 +6,12 @@ import {
 } from '@nestjs/common'
 import { v2 as cloudinary } from 'cloudinary'
 
-// Bridge imports — notification + setting modules still live in legacy land.
-// Replace with injected services when those modules migrate (Phase 2.3 / 2.4).
-import _Notification from '~/db/notification.model.js'
-import _Setting from '~/db/setting.model.js'
-
+import { NotificationService } from '~/modules/notification/notificationService.js'
+import { SettingService } from '~/modules/setting/settingService.js'
 import streamUpload from '~/util/streamUpload.js'
+
 import type { UpdateUserDto } from './dto/updateUserDto.js'
 import { UserRepository } from './userRepository.js'
-
-const Notification = _Notification as {
-  findOne: (filter: unknown) => Promise<any>
-  updateOne: (filter: unknown, update: unknown) => Promise<unknown>
-  create: (doc: unknown) => Promise<unknown>
-}
-const Setting = _Setting as {
-  findOne: (filter: unknown) => any
-}
 
 const followLimitMessage = (verified: boolean, type: 'following' | 'followers') => {
   if (verified) {
@@ -48,7 +37,11 @@ export interface UploadedProfileFiles {
 
 @Injectable()
 export class UserService {
-  constructor(private readonly users: UserRepository) {}
+  constructor(
+    private readonly users: UserRepository,
+    private readonly settings: SettingService,
+    private readonly notifications: NotificationService
+  ) {}
 
   async getByUsername(username: string): Promise<unknown> {
     const user = await this.users.findByUsername(username)
@@ -114,11 +107,10 @@ export class UserService {
       (id: { toString: () => string }) => id.toString() === targetUser._id.toString()
     )
 
-    const followNotification = await Notification.findOne({
-      type: 'follow',
-      from: currentUser._id,
-      to: targetUser._id
-    })
+    const followNotification = await this.notifications.findFollowNotification(
+      currentUser._id.toString(),
+      targetUser._id.toString()
+    )
 
     const currentErr = checkFollowLimit(currentUser.verified, 'following', currentUser.following.length)
     if (currentErr) throw new ForbiddenException(currentErr)
@@ -126,21 +118,21 @@ export class UserService {
     const targetErr = checkFollowLimit(targetUser.verified, 'followers', targetUser.followers.length)
     if (targetErr) throw new ForbiddenException(targetErr)
 
-    const blocked = await this.isFollowNotificationBlocked(targetUserId)
+    const blocked = await this.settings.isFollowNotificationBlocked(targetUserId)
 
     if (!isFollowing) {
       currentUser.following.push(targetUser._id)
       targetUser.followers.push(currentUser._id)
       if (followNotification) {
-        await Notification.updateOne({ _id: followNotification._id }, { show: true })
+        await this.notifications.updateShow(followNotification._id.toString(), true)
       } else if (!blocked) {
-        await Notification.create({ from: currentUserId, to: targetUserId, type: 'follow' })
+        await this.notifications.create(currentUserId, targetUserId, 'follow')
       }
     } else {
       currentUser.following.pull(targetUser._id)
       targetUser.followers.pull(currentUser._id)
       if (followNotification) {
-        await Notification.updateOne({ _id: followNotification._id }, { show: false })
+        await this.notifications.updateShow(followNotification._id.toString(), false)
       }
     }
 
@@ -163,8 +155,7 @@ export class UserService {
       throw new BadRequestException('You cannot block yourself')
     }
 
-    const setting = await Setting.findOne({ user: currentUserId }).select('blockedUser')
-    if (!setting) throw new NotFoundException('Setting not found')
+    const { setting } = await this.settings.getByUser(currentUserId)
 
     const isBlocked = setting.blockedUser.some(
       (id: { toString: () => string }) => id.toString() === targetUserId
@@ -197,11 +188,5 @@ export class UserService {
       .slice(0, 2)
 
     return { admin, suggestedUsers }
-  }
-
-  private async isFollowNotificationBlocked(targetUserId: string): Promise<boolean> {
-    const settings = await Setting.findOne({ user: targetUserId })
-    if (!settings) return false
-    return !settings.notificationPreferences?.blockedType?.follow
   }
 }

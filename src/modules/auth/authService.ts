@@ -8,9 +8,7 @@ import {
 } from '@nestjs/common'
 import type { Response } from 'express'
 
-// Setting module migrates in Phase 2.4; bridge directly until then.
-import _Setting from '~/db/setting.model.js'
-
+import { SettingService } from '~/modules/setting/settingService.js'
 import { UserRepository } from '~/modules/user/userRepository.js'
 import { comparePassword, hashPassword } from '~/util/authenticationCrypto.js'
 import {
@@ -29,11 +27,12 @@ import type { LoginDto } from './dto/loginDto.js'
 import type { RegisterDto } from './dto/registerDto.js'
 import type { UpdatePasswordDto } from './dto/updatePasswordDto.js'
 
-const Setting = _Setting as { create: (doc: unknown) => Promise<unknown> }
-
 @Injectable()
 export class AuthService {
-  constructor(private readonly users: UserRepository) {}
+  constructor(
+    private readonly users: UserRepository,
+    private readonly settings: SettingService
+  ) {}
 
   private async issueTokens(user: any): Promise<{ accessToken: string; refreshToken: string }> {
     const userId = user._id.toString()
@@ -60,7 +59,7 @@ export class AuthService {
     const passwordHash = await hashPassword(password)
     const user = await this.users.create({ username, authentication: { passwordHash } })
 
-    await Setting.create({ user: user._id.toString() })
+    await this.settings.createForUser(user._id.toString())
 
     return { userId: user._id.toString(), name: user.name }
   }

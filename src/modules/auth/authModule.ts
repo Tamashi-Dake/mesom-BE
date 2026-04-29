@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common'
 
 import { JwtAuthGuard } from '~/common/guards/jwtAuthGuard.js'
 import { ValidateOriginGuard } from '~/common/guards/validateOriginGuard.js'
+import { SettingModule } from '~/modules/setting/settingModule.js'
 import { UserModule } from '~/modules/user/userModule.js'
 
 import { AuthController } from './authController.js'
@@ -9,7 +10,7 @@ import { AuthService } from './authService.js'
 import { PasswordController } from './passwordController.js'
 
 @Module({
-  imports: [UserModule],
+  imports: [UserModule, SettingModule],
   controllers: [AuthController, PasswordController],
   providers: [AuthService, JwtAuthGuard, ValidateOriginGuard],
   exports: [AuthService]
