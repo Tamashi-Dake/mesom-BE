@@ -9,8 +9,10 @@ import { v2 as cloudinary } from 'cloudinary'
 import { NotificationService } from '~/modules/notification/notificationService.js'
 import { SettingService } from '~/modules/setting/settingService.js'
 import { randomDelay } from '~/util/delay.js'
+import { updateUserInterest } from '~/util/interest.js'
 import uploadImagesToCloudinary from '~/util/uploadImagesToCloudinary.js'
 import _Post from '~/db/post.model.js'
+import _Tag from '~/db/tag.model.js'
 import _View from '~/db/view.model.js'
 import { User as _User } from '~/db/user.model.js'
 
@@ -24,6 +26,10 @@ const Post = _Post as {
   create: (doc: unknown) => Promise<any>
   updateOne: (filter: unknown, update: unknown) => Promise<any>
 }
+const Tag = _Tag as {
+  findOneAndUpdate: (filter: unknown, update: unknown, options: unknown) => AnyQuery
+  updateOne: (filter: unknown, update: unknown) => Promise<any>
+}
 const View = _View as {
   findOne: (filter: unknown) => AnyQuery
   create: (doc: unknown) => Promise<any>
@@ -31,6 +37,12 @@ const View = _View as {
 const User = _User as {
   findById: (id: unknown) => AnyQuery
   updateOne: (filter: unknown, update: unknown) => Promise<any>
+}
+
+function extractTagNames(text?: string): string[] {
+  if (!text) return []
+  const matches = text.match(/#(\w+)/g) ?? []
+  return [...new Set(matches.map((t) => t.slice(1).toLowerCase()))].slice(0, 5)
 }
 
 const AUTHOR_POPULATE = 'displayName username profile.avatarImg profile.coverImg profile.bio following followers'
@@ -42,47 +54,48 @@ export class PostService {
     private readonly settings: SettingService
   ) {}
 
-  private paginate(total: number, skip: number, limit: number) {
-    const remaining = total - skip - limit
-    return { nextSkip: remaining > 0 ? skip + limit : null }
+  private buildCursorResult<T extends { _id: any }>(docs: T[], limit: number) {
+    const hasMore = docs.length > limit
+    const result = docs.slice(0, limit)
+    const nextCursor = hasMore ? result[result.length - 1]._id.toString() : null
+    return { result, nextCursor, hasMore }
   }
 
-  async getAllPosts(limit: number, skip: number) {
-    const filter = { parent: { $exists: false }, deleted: false }
+  async getAllPosts(limit: number, cursor: string | null) {
+    const filter: any = { parent: { $exists: false }, deleted: false }
+    if (cursor) filter._id = { $lt: cursor }
     const posts = await Post.find(filter)
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(limit)
+      .sort({ createdAt: -1, _id: -1 })
+      .limit(limit + 1)
       .populate({ path: 'author', select: AUTHOR_POPULATE })
-    const totalPosts = await Post.countDocuments(filter)
-    return { posts, totalPosts, limit, skip, ...this.paginate(totalPosts, skip, limit) }
+    const { result, nextCursor, hasMore } = this.buildCursorResult(posts, limit)
+    return { posts: result, nextCursor, hasMore }
   }
 
-  async getPostsByFollowing(userId: string, limit: number, skip: number) {
+  async getPostsByFollowing(userId: string, limit: number, cursor: string | null) {
     const user = await User.findById(userId).select('following')
     if (!user) throw new NotFoundException('User not found')
     const following = user.following ?? []
 
-    const filter = { author: { $in: following }, parent: { $exists: false }, deleted: false }
-    const totalPosts = await Post.countDocuments(filter)
-    if (totalPosts === 0) return { posts: [], totalPosts: 0, limit, skip, nextSkip: null }
+    const filter: any = { author: { $in: following }, parent: { $exists: false }, deleted: false }
+    if (cursor) filter._id = { $lt: cursor }
 
     const posts = await Post.find(filter)
-      .sort({ createdAt: -1 })
-      .limit(limit)
-      .skip(skip)
+      .sort({ createdAt: -1, _id: -1 })
+      .limit(limit + 1)
       .populate({ path: 'author', select: AUTHOR_POPULATE })
 
-    return { posts, totalPosts, limit, skip, ...this.paginate(totalPosts, skip, limit) }
+    const { result, nextCursor, hasMore } = this.buildCursorResult(posts, limit)
+    return { posts: result, nextCursor, hasMore }
   }
 
-  async getUserBookmarks(userId: string, limit: number, skip: number) {
+  async getUserBookmarks(userId: string, limit: number, cursor: string | null) {
     const user = await User.findById(userId)
     if (!user) throw new NotFoundException('User not found')
 
     const bookmarks: Array<{ post: any; bookmarkedAt: Date }> = user.bookmarks ?? []
     if (bookmarks.length === 0) {
-      return { posts: [], totalPosts: 0, limit, skip, nextSkip: null }
+      return { posts: [], nextCursor: null, hasMore: false }
     }
 
     const validBookmarks: typeof bookmarks = []
@@ -105,14 +118,24 @@ export class PostService {
     }
 
     if (validBookmarks.length === 0) {
-      return { posts: [], totalPosts: 0, limit, skip, nextSkip: null }
+      return { posts: [], nextCursor: null, hasMore: false }
     }
 
-    const sortedBookmarks = validBookmarks
-      .sort((a, b) => (b.bookmarkedAt as any) - (a.bookmarkedAt as any))
-      .slice(skip, skip + limit)
-    const postIds = sortedBookmarks.map((b) => b.post)
+    validBookmarks.sort((a, b) => (b.bookmarkedAt as any) - (a.bookmarkedAt as any))
 
+    // cursor = post._id of the last bookmark from previous page
+    let startIdx = 0
+    if (cursor) {
+      const idx = validBookmarks.findIndex((b) => b.post.toString() === cursor)
+      if (idx !== -1) startIdx = idx + 1
+    }
+
+    const paged = validBookmarks.slice(startIdx, startIdx + limit + 1)
+    const hasMore = paged.length > limit
+    const pagePart = paged.slice(0, limit)
+    const nextCursor = hasMore ? pagePart[pagePart.length - 1].post.toString() : null
+
+    const postIds = pagePart.map((b) => b.post)
     const posts = await Post.find({ _id: { $in: postIds }, deleted: false }).populate({
       path: 'author',
       select: AUTHOR_POPULATE
@@ -121,8 +144,7 @@ export class PostService {
       posts.find((p: any) => p._id.toString() === id.toString())
     )
 
-    const totalPosts = validBookmarks.length
-    return { posts: sortedPosts, totalPosts, limit, skip, ...this.paginate(totalPosts, skip, limit) }
+    return { posts: sortedPosts, nextCursor, hasMore }
   }
 
   async getPost(postId: string) {
@@ -142,7 +164,19 @@ export class PostService {
       throw new BadRequestException('Please provide text or image in the post')
     }
     const imageSecureURLs = await uploadImagesToCloudinary(files, 'Mesom/PostImage')
-    const post = await Post.create({ author: userId, text, images: imageSecureURLs })
+
+    const tagNames = extractTagNames(text)
+    const tagIds: string[] = []
+    for (const name of tagNames) {
+      const tag = await Tag.findOneAndUpdate(
+        { name },
+        { $inc: { postCount: 1 } },
+        { upsert: true, new: true }
+      )
+      tagIds.push(tag._id.toString())
+    }
+
+    const post = await Post.create({ author: userId, text, images: imageSecureURLs, tags: tagIds })
     return post
   }
 
@@ -160,6 +194,12 @@ export class PostService {
       }
     }
 
+    if (post.tags?.length > 0) {
+      for (const tagId of post.tags) {
+        await Tag.updateOne({ _id: tagId }, { $inc: { postCount: -1 } })
+      }
+    }
+
     await Post.updateOne({ _id: postId }, { $set: { deleted: true, images: [] } })
 
     if (post.parent?.parentPostID) {
@@ -173,18 +213,17 @@ export class PostService {
     return { message: 'Post deleted successfully' }
   }
 
-  async getRepliesForPost(postId: string, limit: number, skip: number) {
-    const filter = { 'parent.parentPostID': postId, deleted: false }
-    const totalReplies = await Post.countDocuments(filter)
-    if (totalReplies === 0) return { posts: [], totalReplies: 0, limit, skip, nextSkip: null }
+  async getRepliesForPost(postId: string, limit: number, cursor: string | null) {
+    const filter: any = { 'parent.parentPostID': postId, deleted: false }
+    if (cursor) filter._id = { $lt: cursor }
 
     const replies = await Post.find(filter)
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(limit)
+      .sort({ createdAt: -1, _id: -1 })
+      .limit(limit + 1)
       .populate({ path: 'author', select: AUTHOR_POPULATE })
 
-    return { posts: replies, totalReplies, limit, skip, ...this.paginate(totalReplies, skip, limit) }
+    const { result, nextCursor, hasMore } = this.buildCursorResult(replies, limit)
+    return { posts: result, nextCursor, hasMore }
   }
 
   async createReplyPost(
@@ -222,69 +261,71 @@ export class PostService {
       }
     }
 
+    setImmediate(() => updateUserInterest(userId, parentPostId, 'reply').catch(() => {}))
     return { replyPost, numberReplies: updatedPost?.userReplies }
   }
 
-  async getPostsByUser(userId: string, limit: number, skip: number) {
-    const filter = {
+  async getPostsByUser(userId: string, limit: number, cursor: string | null) {
+    const filter: any = {
       $or: [
         { parent: { $exists: false }, author: userId },
         { parent: { $exists: false }, userShared: userId }
       ],
       deleted: false
     }
-    const totalPosts = await Post.countDocuments(filter)
-    if (totalPosts === 0) return { posts: [], totalPosts: 0, limit, skip, nextSkip: null }
+    if (cursor) filter._id = { $lt: cursor }
 
     const posts = await Post.find(filter)
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(limit)
+      .sort({ createdAt: -1, _id: -1 })
+      .limit(limit + 1)
       .populate({ path: 'author', select: AUTHOR_POPULATE })
 
-    return { posts, totalPosts, limit, skip, ...this.paginate(totalPosts, skip, limit) }
+    const { result, nextCursor, hasMore } = this.buildCursorResult(posts, limit)
+    return { posts: result, nextCursor, hasMore }
   }
 
-  async getRepliesByUser(userId: string, limit: number, skip: number) {
-    const filter = { parent: { $exists: true }, author: userId, deleted: false }
-    const totalPosts = await Post.countDocuments(filter)
-    if (totalPosts === 0) return { posts: [], totalPosts: 0, limit, skip, nextSkip: null }
+  async getRepliesByUser(userId: string, limit: number, cursor: string | null) {
+    const filter: any = { parent: { $exists: true }, author: userId, deleted: false }
+    if (cursor) filter._id = { $lt: cursor }
 
     const posts = await Post.find(filter)
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(limit)
+      .sort({ createdAt: -1, _id: -1 })
+      .limit(limit + 1)
       .populate({ path: 'author', select: AUTHOR_POPULATE })
 
-    return { posts, totalPosts, limit, skip, ...this.paginate(totalPosts, skip, limit) }
+    const { result, nextCursor, hasMore } = this.buildCursorResult(posts, limit)
+    return { posts: result, nextCursor, hasMore }
   }
 
-  async getMediasByUser(userId: string, limit: number, skip: number) {
-    const filter = { parent: { $exists: false }, author: userId, deleted: false, images: { $ne: [] } }
-    const totalPosts = await Post.countDocuments(filter)
-    if (totalPosts === 0) return { posts: [], totalPosts: 0, limit, skip, nextSkip: null }
+  async getMediasByUser(userId: string, limit: number, cursor: string | null) {
+    const filter: any = {
+      parent: { $exists: false },
+      author: userId,
+      deleted: false,
+      images: { $ne: [] }
+    }
+    if (cursor) filter._id = { $lt: cursor }
 
     const posts = await Post.find(filter)
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(limit)
+      .sort({ createdAt: -1, _id: -1 })
+      .limit(limit + 1)
       .populate({ path: 'author', select: AUTHOR_POPULATE })
 
-    return { posts, totalPosts, limit, skip, ...this.paginate(totalPosts, skip, limit) }
+    const { result, nextCursor, hasMore } = this.buildCursorResult(posts, limit)
+    return { posts: result, nextCursor, hasMore }
   }
 
-  async getLikedPostsByUser(userId: string, limit: number, skip: number) {
-    const filter = { userLikes: userId, deleted: false }
-    const totalLikedPosts = await Post.countDocuments(filter)
-    if (totalLikedPosts === 0) return { posts: [], totalLikedPosts: 0, limit, skip, nextSkip: null }
+  async getLikedPostsByUser(userId: string, limit: number, cursor: string | null) {
+    const filter: any = { userLikes: userId, deleted: false }
+    if (cursor) filter._id = { $lt: cursor }
 
     const posts = await Post.find(filter)
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(limit)
+      .sort({ createdAt: -1, _id: -1 })
+      .limit(limit + 1)
       .populate({ path: 'author', select: AUTHOR_POPULATE })
 
-    return { posts, totalLikedPosts, limit, skip, ...this.paginate(totalLikedPosts, skip, limit) }
+    const { result, nextCursor, hasMore } = this.buildCursorResult(posts, limit)
+    return { posts: result, nextCursor, hasMore }
   }
 
   async toggleLikePost(postId: string, userId: string) {
@@ -318,6 +359,7 @@ export class PostService {
     }
 
     await post.save()
+    if (!isLiked) setImmediate(() => updateUserInterest(userId, postId, 'like').catch(() => {}))
     return { message: !isLiked ? 'Post liked' : 'Post unliked', likes: post.userLikes }
   }
 
@@ -357,6 +399,7 @@ export class PostService {
     }
 
     await post.save()
+    if (!isShared) setImmediate(() => updateUserInterest(userId, postId, 'share').catch(() => {}))
     return { message: !isShared ? 'Post shared' : 'Post unshared', shares: post.userShared }
   }
 
@@ -384,6 +427,9 @@ export class PostService {
       { new: true }
     )
 
+    if (!isBookmarked) {
+      setImmediate(() => updateUserInterest(userId, postId, 'bookmark').catch(() => {}))
+    }
     return {
       message: !isBookmarked ? 'Post has been bookmarked' : 'Post has been removed from bookmarks',
       userBookmarks: updatedPost?.userBookmarks
@@ -396,6 +442,7 @@ export class PostService {
     if (!view) {
       await View.create({ postID: postId, userID: userId })
       await Post.updateOne({ _id: postId }, { $inc: { views: 1 } })
+      setImmediate(() => updateUserInterest(userId, postId, 'view').catch(() => {}))
       return { message: 'Post view increased' }
     }
     return { message: 'You just viewed this post' }

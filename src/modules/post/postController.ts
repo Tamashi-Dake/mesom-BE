@@ -29,9 +29,9 @@ const uploadOptions = {
   limits: { fileSize: 5 * 1024 * 1024 }
 }
 
-function parseQuery(value: string | undefined, fallback: number) {
+function parseLimit(value: string | undefined, fallback: number) {
   const n = parseInt(value ?? String(fallback))
-  return isNaN(n) ? fallback : n
+  return isNaN(n) || n < 1 ? fallback : n
 }
 
 @Controller()
@@ -42,34 +42,26 @@ export class PostController {
   // ── List endpoints ────────────────────────────────────────────────────────
 
   @Get('posts')
-  getAllPosts(@Query('limit') limit?: string, @Query('skip') skip?: string) {
-    return this.postService.getAllPosts(parseQuery(limit, 10), parseQuery(skip, 0))
+  getAllPosts(@Query('limit') limit?: string, @Query('cursor') cursor?: string) {
+    return this.postService.getAllPosts(parseLimit(limit, 10), cursor ?? null)
   }
 
   @Get('posts/following')
   getPostsByFollowing(
     @CurrentUser() user: AccessTokenPayload,
     @Query('limit') limit?: string,
-    @Query('skip') skip?: string
+    @Query('cursor') cursor?: string
   ) {
-    return this.postService.getPostsByFollowing(
-      user.userId,
-      parseQuery(limit, 10),
-      parseQuery(skip, 0)
-    )
+    return this.postService.getPostsByFollowing(user.userId, parseLimit(limit, 10), cursor ?? null)
   }
 
   @Get('posts/bookmarks')
   getUserBookmarks(
     @CurrentUser() user: AccessTokenPayload,
     @Query('limit') limit?: string,
-    @Query('skip') skip?: string
+    @Query('cursor') cursor?: string
   ) {
-    return this.postService.getUserBookmarks(
-      user.userId,
-      parseQuery(limit, 10),
-      parseQuery(skip, 0)
-    )
+    return this.postService.getUserBookmarks(user.userId, parseLimit(limit, 10), cursor ?? null)
   }
 
   // ── Single post CRUD ──────────────────────────────────────────────────────
@@ -105,13 +97,9 @@ export class PostController {
   getRepliesForPost(
     @Param('id', ParseObjectIdPipe) postId: string,
     @Query('limit') limit?: string,
-    @Query('skip') skip?: string
+    @Query('cursor') cursor?: string
   ) {
-    return this.postService.getRepliesForPost(
-      postId,
-      parseQuery(limit, 10),
-      parseQuery(skip, 0)
-    )
+    return this.postService.getRepliesForPost(postId, parseLimit(limit, 10), cursor ?? null)
   }
 
   @Post('post/:id')
@@ -138,36 +126,36 @@ export class PostController {
   getPostsByUser(
     @Param('id', ParseObjectIdPipe) userId: string,
     @Query('limit') limit?: string,
-    @Query('skip') skip?: string
+    @Query('cursor') cursor?: string
   ) {
-    return this.postService.getPostsByUser(userId, parseQuery(limit, 10), parseQuery(skip, 0))
+    return this.postService.getPostsByUser(userId, parseLimit(limit, 10), cursor ?? null)
   }
 
   @Get('user/:id/replies')
   getRepliesByUser(
     @Param('id', ParseObjectIdPipe) userId: string,
     @Query('limit') limit?: string,
-    @Query('skip') skip?: string
+    @Query('cursor') cursor?: string
   ) {
-    return this.postService.getRepliesByUser(userId, parseQuery(limit, 10), parseQuery(skip, 0))
+    return this.postService.getRepliesByUser(userId, parseLimit(limit, 10), cursor ?? null)
   }
 
   @Get('user/:id/medias')
   getMediasByUser(
     @Param('id', ParseObjectIdPipe) userId: string,
     @Query('limit') limit?: string,
-    @Query('skip') skip?: string
+    @Query('cursor') cursor?: string
   ) {
-    return this.postService.getMediasByUser(userId, parseQuery(limit, 10), parseQuery(skip, 0))
+    return this.postService.getMediasByUser(userId, parseLimit(limit, 10), cursor ?? null)
   }
 
   @Get('user/:id/likes')
   getLikedPostsByUser(
     @Param('id', ParseObjectIdPipe) userId: string,
     @Query('limit') limit?: string,
-    @Query('skip') skip?: string
+    @Query('cursor') cursor?: string
   ) {
-    return this.postService.getLikedPostsByUser(userId, parseQuery(limit, 10), parseQuery(skip, 0))
+    return this.postService.getLikedPostsByUser(userId, parseLimit(limit, 10), cursor ?? null)
   }
 
   // ── Interactions ──────────────────────────────────────────────────────────

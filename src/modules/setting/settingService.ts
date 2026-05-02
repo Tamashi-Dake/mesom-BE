@@ -5,6 +5,7 @@ type AnyDoc = any
 type AnyQuery = any
 const Setting = _Setting as {
   findOne: (filter: unknown) => AnyQuery
+  find: (filter: unknown) => AnyQuery
   findOneAndUpdate: (filter: unknown, update: unknown, options: unknown) => AnyQuery
   updateOne: (filter: unknown, update: unknown) => Promise<unknown>
   create: (doc: unknown) => Promise<AnyDoc>
@@ -83,5 +84,11 @@ export class SettingService {
     const setting = await Setting.findOne({ user: userId }).select('blockedUser')
     if (!setting) return []
     return setting.blockedUser
+  }
+
+  // Used by TimelineService — find users who have blocked a given user
+  async getUsersWhoBlocked(userId: string): Promise<unknown[]> {
+    const settings = await Setting.find({ blockedUser: userId }).select('user')
+    return settings.map((s: { user: unknown }) => s.user)
   }
 }

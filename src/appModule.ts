@@ -8,6 +8,8 @@ import { NotificationModule } from './modules/notification/notificationModule.js
 import { PostModule } from './modules/post/postModule.js'
 import { SearchModule } from './modules/search/searchModule.js'
 import { SettingModule } from './modules/setting/settingModule.js'
+import { TagModule } from './modules/tag/tagModule.js'
+import { TimelineModule } from './modules/timeline/timelineModule.js'
 import { UserModule } from './modules/user/userModule.js'
 
 @Module({
@@ -28,7 +30,9 @@ import { UserModule } from './modules/user/userModule.js'
     SettingModule,
     PostModule,
     SearchModule,
-    ConversationModule
+    ConversationModule,
+    TagModule,
+    TimelineModule
   ]
 })
 export class AppModule {}
