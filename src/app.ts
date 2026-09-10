@@ -5,6 +5,8 @@ import cookieParser from 'cookie-parser'
 import router from './routes/index.js'
 import corsOptions from './config/corsOptions.js'
 import './config/cloudinary.js'
+import { setServers } from 'node:dns/promises'
+setServers(['1.1.1.1', '8.8.8.8'])
 
 const app = express()
 

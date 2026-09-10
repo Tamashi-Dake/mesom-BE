@@ -1,4 +1,4 @@
-import 'module-alias/register.js'
+import 'module-alias/register'
 import dotenv from 'dotenv'
 // TODO: refactor dotenv trong 1 file
 dotenv.config({

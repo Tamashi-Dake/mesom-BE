@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run:*)",
+      "Bash(grep -n \"module-alias\" src/server.ts src/*.ts)",
+      "Bash(timeout 15 yarn dev)",
+      "Bash(nslookup cluster0.rx6d30g.mongodb.net)",
+      "Bash(nslookup:*)"
+    ]
+  }
+}

@@ -3,9 +3,7 @@ import mongoose from 'mongoose'
 const connectMongoDB = async () => {
   try {
     // Kết nối MongoDB
-    const conn = await mongoose.connect(
-      process.env.NODE_ENV === 'production' ? process.env.MONGO_PROD_URI : process.env.MONGO_URI
-    )
+    await mongoose.connect(process.env.NODE_ENV === 'production' ? process.env.MONGO_PROD_URI : process.env.MONGO_URI)
     console.log(`Connect to MongoDB successfully`)
     // Lấy thông tin database hiện tại
     // console.log(`Connected to MongoDB: ${conn.connection.host}`);
